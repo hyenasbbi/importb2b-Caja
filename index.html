@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080909">
+  <meta name="description" content="IMPORTB2B Control Financiero">
+  <title>IMPORTB2B · Control Financiero</title>
+  <link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body>
+  <div class="watermark-grid" aria-hidden="true"></div>
+
+  <!-- LOGIN -->
+  <section id="loginView" class="login-view">
+    <div class="login-shell">
+      <div class="login-brand">
+        <div class="brand-rule"></div>
+        <div class="official-logo-slot">
+          <img id="loginLogo" src="./assets/brand/importb2b-logo.png" alt="Logo oficial IMPORTB2B"
+               onerror="this.style.display='none'; document.getElementById('logoMissingLogin').style.display='flex';">
+          <div id="logoMissingLogin" class="logo-missing">
+            <strong>LOGO OFICIAL</strong>
+            <span>Colocar PNG/SVG en assets/brand</span>
+          </div>
+        </div>
+        <div class="eyebrow">IMPORTB2B</div>
+        <h1>CONTROL<br><span>FINANCIERO</span></h1>
+        <p>Caja, liquidaciones, deudores y USDT compartidos entre socios.</p>
+        <div class="brand-rule brand-rule--short"></div>
+      </div>
+
+      <div class="login-panel">
+        <div class="login-card">
+          <div class="eyebrow">ACCESO PRIVADO</div>
+          <h2>Ingresar</h2>
+          <p class="muted">Cada socio utiliza su propia cuenta.</p>
+
+          <form id="loginForm" class="form-stack">
+            <label>
+              <span>Email</span>
+              <input id="loginEmail" type="email" autocomplete="email" placeholder="tu@email.com" required>
+            </label>
+            <label>
+              <span>Contraseña</span>
+              <input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" required>
+            </label>
+            <button class="btn btn-primary btn-block" type="submit">INGRESAR</button>
+          </form>
+
+          <button id="demoLoginBtn" class="btn btn-ghost btn-block is-hidden" type="button">VER BETA EN MODO DEMO</button>
+          <div id="loginMessage" class="form-message"></div>
+          <div class="secure-note">● SESIÓN PROTEGIDA · SUPABASE AUTH</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <div id="appView" class="app-shell is-hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="official-logo-slot official-logo-slot--small">
+          <img src="./assets/brand/importb2b-logo.png" alt="Logo oficial IMPORTB2B"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="logo-missing logo-missing--small"><strong>IB</strong></div>
+        </div>
+        <div>
+          <div class="sidebar-brand-name">IMPORTB2B</div>
+          <div class="sidebar-brand-sub">CONTROL FINANCIERO</div>
+        </div>
+      </div>
+
+      <nav class="side-nav">
+        <button class="nav-item is-active" data-view="dashboard"><span class="nav-icon"></span><span>Dashboard</span></button>
+        <button class="nav-item" data-view="movements"><span class="nav-icon"></span><span>Movimientos</span></button>
+        <button class="nav-item" data-view="usdt"><span class="nav-icon"></span><span>USDT / ARS</span></button>
+        <button class="nav-item" data-view="settlements"><span class="nav-icon"></span><span>Dinero a liquidar</span></button>
+        <button class="nav-item" data-view="receivables"><span class="nav-icon"></span><span>Dinero a cobrar</span></button>
+        <button class="nav-item" data-view="audit"><span class="nav-icon"></span><span>Auditoría</span></button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="user-block">
+          <div class="avatar" id="userInitial">U</div>
+          <div class="user-copy">
+            <strong id="userName">Usuario</strong>
+            <span id="userEmail">—</span>
+          </div>
+        </div>
+        <button id="logoutBtn" class="btn btn-ghost btn-block">CERRAR SESIÓN</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow" id="pageEyebrow">IMPORTB2B · CAJA</div>
+          <h2 id="pageTitle">DASHBOARD</h2>
+        </div>
+        <div class="topbar-actions">
+          <div id="connectionPill" class="status-pill"><span class="dot"></span><span>Conectando</span></div>
+          <button id="refreshAllBtn" class="icon-btn" title="Actualizar">↻</button>
+          <button id="newMovementTopBtn" class="btn btn-primary">+ NUEVO MOVIMIENTO</button>
+        </div>
+      </header>
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="page-view">
+        <div class="hero-grid">
+          <article class="panel balance-panel">
+            <div class="panel-label">SALDO DISPONIBLE ESTIMADO</div>
+            <div class="balance-main" id="totalBalanceArs">$ 0</div>
+            <div class="balance-note">Transferencias + efectivo + USDT valorizado a cotización de venta.</div>
+            <div class="accent-line"></div>
+
+            <div class="wallet-grid">
+              <div class="wallet">
+                <span>TRANSFERENCIAS</span>
+                <strong id="transferBalance">$ 0</strong>
+              </div>
+              <button id="cashBreakdownToggle" class="wallet wallet-action" type="button" aria-expanded="false">
+                <span>EFECTIVO · VER DESGLOSE</span>
+                <strong id="cashBalance">$ 0</strong>
+              </button>
+              <div class="wallet">
+                <span>USDT</span>
+                <strong id="usdtBalance">0,00 USDT</strong>
+              </div>
+            </div>
+
+            <div id="cashBreakdown" class="cash-breakdown is-hidden">
+              <div><span>NAHUEL</span><strong id="cashNahuel">$ 0</strong></div>
+              <div><span>ESTEBAN</span><strong id="cashEsteban">$ 0</strong></div>
+              <div id="cashUnassignedWrap" class="is-hidden"><span>SIN ASIGNAR</span><strong id="cashUnassigned">$ 0</strong></div>
+            </div>
+          </article>
+
+          <article class="panel quote-panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-label">BINANCE P2P · USDT / ARS</div>
+                <h3>COTIZACIÓN</h3>
+              </div>
+              <div id="quoteSourceBadge" class="source-badge">CARGANDO</div>
+            </div>
+
+            <div class="quote-grid">
+              <div class="quote quote-buy">
+                <span>COMPRA USDT</span>
+                <strong id="buyQuote">$ —</strong>
+                <small>Pagás ARS → recibís USDT</small>
+              </div>
+              <div class="quote quote-sell">
+                <span>VENTA USDT</span>
+                <strong id="sellQuote">$ —</strong>
+                <small>Entregás USDT → recibís ARS</small>
+              </div>
+            </div>
+
+            <div class="quote-meta">
+              <span id="quoteUpdated">Sin actualizar</span>
+              <div class="inline-actions">
+                <button class="text-btn" data-go="usdt">VER DETALLE</button>
+                <button id="refreshQuoteBtn" class="text-btn">ACTUALIZAR ↻</button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card">
+            <span>INGRESOS DEL MES</span>
+            <strong class="positive" id="monthIncome">+$ 0</strong>
+            <small id="monthIncomeCount">0 movimientos</small>
+          </article>
+          <article class="stat-card">
+            <span>EGRESOS DEL MES</span>
+            <strong class="negative" id="monthExpense">-$ 0</strong>
+            <small id="monthExpenseCount">0 movimientos</small>
+          </article>
+          <article class="stat-card stat-card--result">
+            <span>RESULTADO DEL MES</span>
+            <strong id="monthResult">$ 0</strong>
+            <small>Ingresos menos egresos</small>
+          </article>
+        </div>
+
+        <div class="pending-grid">
+          <button class="pending-card" type="button" data-go="settlements">
+            <div>
+              <span>DINERO A LIQUIDAR</span>
+              <strong id="pendingSettlementAmount">$ 0</strong>
+              <small id="pendingSettlementCount">0 operaciones pendientes</small>
+            </div>
+            <span class="pending-arrow">→</span>
+          </button>
+          <button class="pending-card" type="button" data-go="receivables">
+            <div>
+              <span>DINERO A COBRAR</span>
+              <strong id="pendingReceivableAmount">$ 0</strong>
+              <small id="pendingReceivableCount">0 clientes con saldo</small>
+            </div>
+            <span class="pending-arrow">→</span>
+          </button>
+        </div>
+
+        <article class="panel section-panel">
+          <div class="panel-head">
+            <div><div class="panel-label">ACTIVIDAD</div><h3>ÚLTIMOS MOVIMIENTOS</h3></div>
+            <button class="text-btn" data-go="movements">VER TODOS →</button>
+          </div>
+          <div id="recentMovements" class="movement-list"></div>
+        </article>
+      </section>
+
+      <!-- MOVEMENTS -->
+      <section id="view-movements" class="page-view is-hidden">
+        <article class="panel section-panel">
+          <div class="panel-head panel-head--wrap">
+            <div><div class="panel-label">CAJA</div><h3>MOVIMIENTOS</h3></div>
+            <div class="header-actions">
+              <button class="btn btn-ghost" data-go="audit" type="button">AUDITORÍA</button>
+              <button id="newMovementViewBtn" class="btn btn-primary" type="button">+ NUEVO</button>
+            </div>
+          </div>
+          <div class="filters filters--spaced">
+            <select id="filterKind">
+              <option value="">TODOS</option>
+              <option value="income">INGRESOS</option>
+              <option value="expense">EGRESOS</option>
+            </select>
+            <select id="filterMethod">
+              <option value="">TODOS LOS MEDIOS</option>
+              <option value="transferencia">TRANSFERENCIA</option>
+              <option value="efectivo">EFECTIVO</option>
+              <option value="usdt">USDT</option>
+            </select>
+            <input id="filterSearch" type="search" placeholder="Buscar movimiento...">
+          </div>
+          <div id="allMovements" class="movement-list movement-list--table"></div>
+        </article>
+      </section>
+
+      <!-- USDT -->
+      <section id="view-usdt" class="page-view is-hidden">
+        <div class="usdt-layout">
+          <article class="panel quote-panel quote-panel--large">
+            <div class="panel-label">REFERENCIA BINANCE P2P</div>
+            <h3>USDT / ARS</h3>
+            <div class="quote-grid quote-grid--large">
+              <div class="quote quote-buy"><span>COMPRA</span><strong id="buyQuoteLarge">$ —</strong><small>Comprar USDT pagando ARS.</small></div>
+              <div class="quote quote-sell"><span>VENTA</span><strong id="sellQuoteLarge">$ —</strong><small>Vender USDT y recibir ARS.</small></div>
+            </div>
+            <div class="quote-meta"><span id="quoteUpdatedLarge">Sin actualizar</span><button id="refreshQuoteBtnLarge" class="btn btn-outline">ACTUALIZAR BINANCE</button></div>
+          </article>
+
+          <article class="panel manual-panel">
+            <div class="panel-label">RESPALDO</div>
+            <h3>COTIZACIÓN MANUAL</h3>
+            <p class="muted">Solo si Binance no responde o necesitás fijar una referencia excepcional.</p>
+            <form id="manualQuoteForm" class="form-stack compact">
+              <label><span>Compra</span><input id="manualBuy" type="number" step="0.01" min="0" placeholder="1585.00"></label>
+              <label><span>Venta</span><input id="manualSell" type="number" step="0.01" min="0" placeholder="1579.00"></label>
+              <button class="btn btn-primary" type="submit">USAR COTIZACIÓN MANUAL</button>
+            </form>
+          </article>
+        </div>
+
+        <article class="panel section-panel">
+          <div class="panel-head"><div><div class="panel-label">FUNCIONAMIENTO</div><h3>REFERENCIA Y REGISTRO</h3></div></div>
+          <div class="criteria-grid">
+            <div><strong>01</strong><span>Consulta BUY y SELL de USDT/ARS en Binance P2P.</span></div>
+            <div><strong>02</strong><span>La app conserva una última cotización guardada como respaldo.</span></div>
+            <div><strong>03</strong><span>Los movimientos USDT congelan la cotización utilizada.</span></div>
+            <div><strong>04</strong><span>Los snapshots se guardan solo cuando corresponde, evitando duplicados innecesarios.</span></div>
+          </div>
+        </article>
+      </section>
+
+      <!-- SETTLEMENTS -->
+      <section id="view-settlements" class="page-view is-hidden">
+        <div class="module-summary-grid">
+          <article class="panel module-summary-card">
+            <span>PENDIENTE DE ACREDITACIÓN</span>
+            <strong id="settlementsTotal">$ 0</strong>
+            <small id="settlementsCount">0 operaciones</small>
+          </article>
+          <article class="panel module-summary-card module-summary-card--muted">
+            <span>CONCEPTO</span>
+            <strong>GO CUOTAS / TARJETAS</strong>
+            <small>No se suma al saldo disponible hasta liquidarse.</small>
+          </article>
+        </div>
+
+        <article class="panel section-panel">
+          <div class="panel-head panel-head--wrap">
+            <div><div class="panel-label">PENDIENTES</div><h3>DINERO A LIQUIDAR</h3></div>
+            <button id="newSettlementBtn" class="btn btn-primary" type="button">+ NUEVA LIQUIDACIÓN</button>
+          </div>
+          <div id="settlementList" class="finance-list"></div>
+        </article>
+      </section>
+
+      <!-- RECEIVABLES -->
+      <section id="view-receivables" class="page-view is-hidden">
+        <div class="module-summary-grid">
+          <article class="panel module-summary-card">
+            <span>TOTAL A COBRAR</span>
+            <strong id="receivablesTotal">$ 0</strong>
+            <small id="receivablesCount">0 clientes con saldo</small>
+          </article>
+          <article class="panel module-summary-card module-summary-card--muted">
+            <span>CONTROL</span>
+            <strong>DEUDORES</strong>
+            <small>Los cobros pasan a caja recién cuando se registran.</small>
+          </article>
+        </div>
+
+        <article class="panel section-panel">
+          <div class="panel-head panel-head--wrap">
+            <div><div class="panel-label">CLIENTES</div><h3>DINERO A COBRAR</h3></div>
+            <button id="newReceivableBtn" class="btn btn-primary" type="button">+ NUEVO DEUDOR</button>
+          </div>
+          <div id="receivableList" class="finance-list"></div>
+        </article>
+      </section>
+
+      <!-- AUDIT -->
+      <section id="view-audit" class="page-view is-hidden">
+        <article class="panel section-panel">
+          <div class="panel-head"><div><div class="panel-label">SEGURIDAD INTERNA</div><h3>AUDITORÍA</h3></div></div>
+          <p class="muted">Registro de creación, edición y eliminación de movimientos, liquidaciones y deudores.</p>
+          <div id="auditList" class="audit-list"></div>
+        </article>
+      </section>
+    </main>
+
+    <nav class="mobile-nav">
+      <button class="mobile-nav-item is-active" data-view="dashboard"><span>⌂</span><small>INICIO</small></button>
+      <button class="mobile-nav-item" data-view="movements"><span>↕</span><small>CAJA</small></button>
+      <button id="mobileNewBtn" class="mobile-new">+</button>
+      <button class="mobile-nav-item" data-view="settlements"><span>◷</span><small>LIQUIDAR</small></button>
+      <button class="mobile-nav-item" data-view="receivables"><span>$</span><small>COBRAR</small></button>
+    </nav>
+  </div>
+
+  <!-- MOVEMENT MODAL -->
+  <div id="movementModal" class="modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="movementModalTitle">
+    <div class="modal-backdrop" data-close="movement"></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div><div class="eyebrow">IMPORTB2B · CAJA</div><h3 id="movementModalTitle">NUEVO MOVIMIENTO</h3></div>
+        <button class="icon-btn" data-close="movement" type="button">×</button>
+      </div>
+
+      <form id="movementForm" class="movement-form">
+        <input id="movementId" type="hidden">
+        <div class="segmented" id="kindSegment">
+          <button type="button" class="segment is-active" data-kind="income">INGRESO</button>
+          <button type="button" class="segment" data-kind="expense">EGRESO</button>
+        </div>
+        <input id="movementKind" type="hidden" value="income">
+
+        <div class="form-grid">
+          <label><span>Importe</span><input id="movementAmount" type="number" step="0.01" min="0.01" required placeholder="0,00"></label>
+          <label><span>Moneda</span><select id="movementCurrency" required><option value="ARS">ARS</option><option value="USDT">USDT</option></select></label>
+          <label><span>Medio</span><select id="movementMethod" required><option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option><option value="usdt">USDT</option></select></label>
+          <label><span>Categoría</span><select id="movementCategory" required><option>VENTA</option><option>COMPRA DE MERCADERÍA</option><option>ENVÍO / LOGÍSTICA</option><option>GASTO GENERAL</option><option>APORTE SOCIO</option><option>RETIRO SOCIO</option><option>OTRO</option></select></label>
+        </div>
+
+        <label id="cashHolderWrap" class="is-hidden">
+          <span>¿Quién tiene el efectivo?</span>
+          <select id="movementCashHolder"><option value="nahuel">NAHUEL</option><option value="esteban">ESTEBAN</option></select>
+        </label>
+
+        <label><span>Descripción</span><input id="movementDescription" type="text" maxlength="180" placeholder="Ej: compra de 30 prendas"></label>
+
+        <label id="quoteTypeWrap" class="is-hidden">
+          <span>Cotización para USDT</span>
+          <select id="movementQuoteType">
+            <option value="auto">AUTOMÁTICA SEGÚN MOVIMIENTO</option>
+            <option value="buy">COMPRA P2P ACTUAL</option>
+            <option value="sell">VENTA P2P ACTUAL</option>
+            <option id="originalQuoteOption" value="original" class="is-hidden">MANTENER COTIZACIÓN ORIGINAL</option>
+          </select>
+        </label>
+
+        <div class="form-note">La fecha y hora se registran automáticamente al guardar. Si editás un movimiento, se conserva la fecha original y queda registrada la modificación.</div>
+
+        <div id="usdtPreview" class="usdt-preview is-hidden">
+          <div><span>Cotización aplicada</span><strong id="previewQuote">$ —</strong></div>
+          <div><span>Equivalente ARS</span><strong id="previewEquivalent">$ —</strong></div>
+          <small>La cotización queda asociada al movimiento.</small>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" type="button" data-close="movement">CANCELAR</button>
+          <button id="movementSubmitBtn" class="btn btn-primary" type="submit">GUARDAR MOVIMIENTO</button>
+        </div>
+        <div id="movementMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SETTLEMENT CREATE/EDIT MODAL -->
+  <div id="settlementModal" class="modal is-hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close="settlement"></div>
+    <div class="modal-card modal-card--small">
+      <div class="modal-head">
+        <div><div class="eyebrow">DINERO PENDIENTE</div><h3 id="settlementModalTitle">NUEVA LIQUIDACIÓN</h3></div>
+        <button class="icon-btn" data-close="settlement" type="button">×</button>
+      </div>
+      <form id="settlementForm" class="movement-form">
+        <input id="settlementId" type="hidden">
+        <label><span>Origen</span><select id="settlementProvider" required><option value="go_cuotas">GO CUOTAS</option><option value="tarjeta_credito">TARJETA DE CRÉDITO</option><option value="otro">OTRO</option></select></label>
+        <div class="form-grid">
+          <label><span>Importe bruto</span><input id="settlementGross" type="number" step="0.01" min="0.01" required></label>
+          <label><span>Comisiones / descuentos</span><input id="settlementFees" type="number" step="0.01" min="0" value="0" required></label>
+        </div>
+        <label><span>Fecha estimada de acreditación</span><input id="settlementExpected" type="date"></label>
+        <label><span>Descripción</span><input id="settlementDescription" type="text" maxlength="180" placeholder="Ej: venta con tarjeta / lote de operaciones"></label>
+        <div id="settlementNetPreview" class="calculation-strip"><span>NETO A RECIBIR</span><strong>$ 0</strong></div>
+        <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close="settlement">CANCELAR</button><button class="btn btn-primary" type="submit">GUARDAR</button></div>
+        <div id="settlementMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SETTLE FUNDS MODAL -->
+  <div id="settleFundsModal" class="modal is-hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close="settleFunds"></div>
+    <div class="modal-card modal-card--small">
+      <div class="modal-head">
+        <div><div class="eyebrow">ACREDITACIÓN</div><h3>LIQUIDAR DINERO</h3></div>
+        <button class="icon-btn" data-close="settleFunds" type="button">×</button>
+      </div>
+      <form id="settleFundsForm" class="movement-form">
+        <input id="settleFundsId" type="hidden">
+        <div id="settleFundsSummary" class="calculation-strip"><span>NETO</span><strong>$ 0</strong></div>
+        <label><span>¿Dónde ingresó?</span><select id="settleDestinationMethod"><option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option></select></label>
+        <label id="settleCashHolderWrap" class="is-hidden"><span>¿Quién recibió el efectivo?</span><select id="settleCashHolder"><option value="nahuel">NAHUEL</option><option value="esteban">ESTEBAN</option></select></label>
+        <div class="form-note">Al confirmar, deja de figurar como dinero a liquidar y entra automáticamente a la caja disponible.</div>
+        <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close="settleFunds">CANCELAR</button><button class="btn btn-primary" type="submit">CONFIRMAR ACREDITACIÓN</button></div>
+        <div id="settleFundsMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- RECEIVABLE CREATE/EDIT MODAL -->
+  <div id="receivableModal" class="modal is-hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close="receivable"></div>
+    <div class="modal-card modal-card--small">
+      <div class="modal-head">
+        <div><div class="eyebrow">CUENTA POR COBRAR</div><h3 id="receivableModalTitle">NUEVO DEUDOR</h3></div>
+        <button class="icon-btn" data-close="receivable" type="button">×</button>
+      </div>
+      <form id="receivableForm" class="movement-form">
+        <input id="receivableId" type="hidden">
+        <label><span>Cliente</span><input id="receivableClient" type="text" maxlength="120" required placeholder="Nombre del cliente"></label>
+        <label><span>Teléfono (opcional)</span><input id="receivablePhone" type="text" maxlength="40" placeholder="Ej: 342..."></label>
+        <div class="form-grid">
+          <label><span>Importe total</span><input id="receivableTotal" type="number" step="0.01" min="0.01" required></label>
+          <label><span>Vencimiento (opcional)</span><input id="receivableDue" type="date"></label>
+        </div>
+        <label><span>Descripción</span><input id="receivableDescription" type="text" maxlength="180" placeholder="Ej: pedido entregado / saldo pendiente"></label>
+        <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close="receivable">CANCELAR</button><button class="btn btn-primary" type="submit">GUARDAR</button></div>
+        <div id="receivableMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- RECEIVABLE PAYMENT MODAL -->
+  <div id="receivablePaymentModal" class="modal is-hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close="receivablePayment"></div>
+    <div class="modal-card modal-card--small">
+      <div class="modal-head">
+        <div><div class="eyebrow">COBRO</div><h3>REGISTRAR PAGO</h3></div>
+        <button class="icon-btn" data-close="receivablePayment" type="button">×</button>
+      </div>
+      <form id="receivablePaymentForm" class="movement-form">
+        <input id="receivablePaymentId" type="hidden">
+        <div id="receivablePaymentSummary" class="calculation-strip"><span>SALDO PENDIENTE</span><strong>$ 0</strong></div>
+        <label><span>Importe cobrado</span><input id="receivablePaymentAmount" type="number" step="0.01" min="0.01" required></label>
+        <label><span>Medio de cobro</span><select id="receivablePaymentMethod"><option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option></select></label>
+        <label id="receivableCashHolderWrap" class="is-hidden"><span>¿Quién recibió el efectivo?</span><select id="receivablePaymentCashHolder"><option value="nahuel">NAHUEL</option><option value="esteban">ESTEBAN</option></select></label>
+        <div class="form-note">El pago se registra automáticamente como ingreso en caja y reduce el saldo del cliente.</div>
+        <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close="receivablePayment">CANCELAR</button><button class="btn btn-primary" type="submit">REGISTRAR COBRO</button></div>
+        <div id="receivablePaymentMessage" class="form-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./assets/js/config.js"></script>
+  <script type="module" src="./assets/js/app.js"></script>
+</body>
+</html>
