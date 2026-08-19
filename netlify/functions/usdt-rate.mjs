@@ -1,153 +1,316 @@
-// Netlify Function: referencia USDT/ARS de Binance P2P.
-// Objetivo: obtener precios de anuncios reales y filtrar outliers/promocionados.
-// IMPORTANTE: el endpoint web público de Binance puede cambiar sin aviso.
-// La app mantiene fallback a última cotización guardada / cotización manual.
+// IMPORTB2B Control Financiero
+// Netlify Function — Binance P2P USDT/ARS
+//
+// BUY  = comprar USDT pagando ARS
+// SELL = vender USDT recibiendo ARS
 
-const BINANCE_WEB_ENDPOINT =
-  "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search";
+const BASE = "https://www.binance.com";
 
-const commonHeaders = {
-  "content-type": "application/json",
-  "accept": "application/json",
-  "user-agent": "Mozilla/5.0 IMPORTB2B-Control/0.1"
+const QUOTE_PATH =
+  "/bapi/c2c/v1/public/c2c/agent/quote-price";
+
+const ADS_PATH =
+  "/bapi/c2c/v1/public/c2c/agent/ad-list";
+
+const headers = {
+  accept: "application/json",
+  "user-agent": "IMPORTB2B-Control/0.2"
 };
 
-async function search(tradeType) {
-  const payload = {
-    page: 1,
-    rows: 20,
-    payTypes: [],
-    publisherType: null,
-    asset: "USDT",
-    tradeType,
-    fiat: "ARS"
-  };
-
-  const res = await fetch(BINANCE_WEB_ENDPOINT, {
-    method: "POST",
-    headers: commonHeaders,
-    body: JSON.stringify(payload)
+async function getJson(url) {
+  const res = await fetch(url, {
+    method: "GET",
+    headers,
+    cache: "no-store"
   });
 
   if (!res.ok) {
-    throw new Error(`Binance P2P HTTP ${res.status}`);
+    throw new Error(`Binance HTTP ${res.status}`);
   }
 
-  const json = await res.json();
-  return Array.isArray(json?.data) ? json.data : [];
+  return await res.json();
 }
 
-function median(values) {
-  const arr = [...values].sort((a,b)=>a-b);
-  if (!arr.length) return null;
-  const m = Math.floor(arr.length / 2);
-  return arr.length % 2 ? arr[m] : (arr[m-1] + arr[m]) / 2;
+function asPositiveNumber(value) {
+  const n = Number(value);
+
+  return Number.isFinite(n) && n > 0
+    ? n
+    : null;
 }
 
-function normalize(rows) {
-  return rows.map(item => {
-    const adv = item?.adv || {};
-    const advertiser = item?.advertiser || {};
-    return {
-      price: Number(adv.price),
-      min: Number(adv.minSingleTransAmount || 0),
-      max: Number(adv.dynamicMaxSingleTransAmount || adv.maxSingleTransAmount || 0),
-      surplus: Number(adv.surplusAmount || 0),
-      nick: advertiser.nickName || "",
-      monthOrders: Number(
-        advertiser.monthOrderCount ??
-        advertiser.monthOrderCountInLast30Days ??
-        advertiser.userStatsRet?.monthOrderCount ??
-        0
-      ),
-      completion: Number(
-        advertiser.monthFinishRate ??
-        advertiser.monthFinishRateInLast30Days ??
-        advertiser.userStatsRet?.monthFinishRate ??
-        0
-      ),
-      merchant: Boolean(
-        advertiser.userType === "merchant" ||
-        advertiser.isMerchant ||
-        advertiser.proMerchant ||
-        advertiser.userType === "pro"
+function extractQuotePrice(payload) {
+  const directCandidates = [
+    payload?.price,
+    payload?.quotePrice,
+    payload?.referencePrice,
+
+    payload?.data?.price,
+    payload?.data?.quotePrice,
+    payload?.data?.referencePrice,
+
+    payload?.data?.data?.price,
+
+    payload?.result?.price,
+    payload?.result?.quotePrice,
+    payload?.result?.referencePrice
+  ];
+
+  for (const candidate of directCandidates) {
+    const n = asPositiveNumber(candidate);
+
+    if (n) {
+      return n;
+    }
+  }
+
+  const queue = [payload];
+  const visited = new Set();
+
+  while (queue.length) {
+    const current = queue.shift();
+
+    if (
+      !current ||
+      typeof current !== "object" ||
+      visited.has(current)
+    ) {
+      continue;
+    }
+
+    visited.add(current);
+
+    for (const [key, value] of Object.entries(current)) {
+      if (
+        ["price", "quotePrice", "referencePrice"]
+          .includes(key)
+      ) {
+        const n = asPositiveNumber(value);
+
+        if (n) {
+          return n;
+        }
+      }
+
+      if (
+        value &&
+        typeof value === "object"
+      ) {
+        queue.push(value);
+      }
+    }
+  }
+
+  return null;
+}
+
+function collectAdPrices(payload) {
+  const prices = [];
+  const queue = [payload];
+  const visited = new Set();
+
+  while (queue.length) {
+    const current = queue.shift();
+
+    if (
+      !current ||
+      typeof current !== "object" ||
+      visited.has(current)
+    ) {
+      continue;
+    }
+
+    visited.add(current);
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        current,
+        "price"
       )
-    };
-  }).filter(x => Number.isFinite(x.price) && x.price > 0);
-}
+    ) {
+      const n = asPositiveNumber(current.price);
 
-function robustMarket(rows, side) {
-  let ads = normalize(rows);
-  if (!ads.length) throw new Error(`Sin anuncios ${side}`);
+      if (n) {
+        prices.push(n);
+      }
+    }
 
-  // 1) Excluir outliers >3% respecto de la mediana.
-  // Esto elimina promociones como 1.660 vs ~1.585 o 1.501 vs ~1.578.
-  const med = median(ads.map(x => x.price));
-  ads = ads.filter(x => Math.abs(x.price - med) / med <= 0.03);
-
-  // 2) Si Binance devuelve métricas, priorizar historial confiable.
-  const withStats = ads.filter(x => x.monthOrders > 0 || x.completion > 0);
-  if (withStats.length >= 3) {
-    const qualified = withStats.filter(x =>
-      (x.monthOrders === 0 || x.monthOrders >= 50) &&
-      (x.completion === 0 || x.completion >= 0.90 || x.completion >= 90)
-    );
-    if (qualified.length >= 3) ads = qualified;
+    for (const value of Object.values(current)) {
+      if (
+        value &&
+        typeof value === "object"
+      ) {
+        queue.push(value);
+      }
+    }
   }
 
-  // 3) Ordenar anuncios válidos como se ve en Binance P2P.
-  // BUY (comprar USDT): menor precio válido es mejor.
-  // SELL (vender USDT): mayor precio válido es mejor.
-  // Guardamos top 3 como muestra, pero la cotización visible usa el mejor.
-  ads.sort((a,b) => side === "BUY" ? a.price - b.price : b.price - a.price);
-  const top = ads.slice(0, Math.min(3, ads.length));
-  const reference = top[0].price;
+  return prices;
+}
+
+async function getOfficialQuote(tradeType) {
+  const params = new URLSearchParams({
+    fiat: "ARS",
+    asset: "USDT",
+    tradeType
+  });
+
+  const url =
+    `${BASE}${QUOTE_PATH}?${params.toString()}`;
+
+  const payload = await getJson(url);
+
+  const price =
+    extractQuotePrice(payload);
+
+  if (!price) {
+    throw new Error(
+      `Sin precio en quote-price ${tradeType}`
+    );
+  }
 
   return {
-    reference: Math.round(reference * 100) / 100,
-    median: Math.round(med * 100) / 100,
-    sample: top
+    price
   };
+}
+
+async function getAdFallback(tradeType) {
+  const params = new URLSearchParams({
+    fiat: "ARS",
+    asset: "USDT",
+    tradeType,
+    limit: "10"
+  });
+
+  const url =
+    `${BASE}${ADS_PATH}?${params.toString()}`;
+
+  const payload =
+    await getJson(url);
+
+  const prices =
+    collectAdPrices(payload);
+
+  if (!prices.length) {
+    throw new Error(
+      `Sin anuncios en ad-list ${tradeType}`
+    );
+  }
+
+  const price =
+    tradeType === "BUY"
+      ? Math.min(...prices)
+      : Math.max(...prices);
+
+  return {
+    price
+  };
+}
+
+async function resolveSide(tradeType) {
+  try {
+    const result =
+      await getOfficialQuote(tradeType);
+
+    return {
+      price: result.price,
+      source: "Binance P2P quote-price",
+      method: "official_quote"
+    };
+
+  } catch (quoteError) {
+
+    const fallback =
+      await getAdFallback(tradeType);
+
+    return {
+      price: fallback.price,
+      source: "Binance P2P ad-list",
+      method: "official_ads_fallback",
+      quoteError: quoteError.message
+    };
+  }
 }
 
 export default async () => {
   try {
-    const [buyRows, sellRows] = await Promise.all([search("BUY"), search("SELL")]);
+    const [
+      buyResult,
+      sellResult
+    ] = await Promise.all([
+      resolveSide("BUY"),
+      resolveSide("SELL")
+    ]);
 
-    // Binance mapping:
-    // BUY  = usuario paga fiat y recibe crypto.
-    // SELL = usuario entrega crypto y recibe fiat.
-    const buy = robustMarket(buyRows, "BUY");
-    const sell = robustMarket(sellRows, "SELL");
+    return Response.json(
+      {
+        pair: "USDT/ARS",
 
-    return Response.json({
-      pair: "USDT/ARS",
-      buy: buy.reference,
-      sell: sell.reference,
-      source: "Binance P2P",
-      methodology: "mejor_precio_valido_filtrado_3pct",
-      updatedAt: new Date().toISOString(),
-      debug: {
-        buyMedian: buy.median,
-        sellMedian: sell.median,
-        buySample: buy.sample.map(x => ({price:x.price,nick:x.nick,orders:x.monthOrders,completion:x.completion})),
-        sellSample: sell.sample.map(x => ({price:x.price,nick:x.nick,orders:x.monthOrders,completion:x.completion}))
+        buy:
+          Math.round(
+            buyResult.price * 100
+          ) / 100,
+
+        sell:
+          Math.round(
+            sellResult.price * 100
+          ) / 100,
+
+        source:
+          buyResult.source ===
+          sellResult.source
+            ? buyResult.source
+            : "Binance P2P",
+
+        buySource:
+          buyResult.source,
+
+        sellSource:
+          sellResult.source,
+
+        buyMethod:
+          buyResult.method,
+
+        sellMethod:
+          sellResult.method,
+
+        updatedAt:
+          new Date().toISOString()
+      },
+      {
+        status: 200,
+        headers: {
+          "content-type":
+            "application/json; charset=utf-8",
+
+          "cache-control":
+            "no-store, max-age=0"
+        }
       }
-    }, {
-      status: 200,
-      headers: {
-        "cache-control": "no-store, max-age=0",
-        "content-type": "application/json; charset=utf-8"
-      }
-    });
+    );
+
   } catch (error) {
-    return Response.json({
-      error: "BINANCE_P2P_UNAVAILABLE",
-      message: error?.message || "No se pudo obtener la cotización."
-    }, {
-      status: 502,
-      headers: {"cache-control":"no-store"}
-    });
+
+    return Response.json(
+      {
+        error:
+          "BINANCE_P2P_UNAVAILABLE",
+
+        message:
+          error?.message ||
+          "No se pudo obtener la cotización Binance P2P."
+      },
+      {
+        status: 502,
+        headers: {
+          "content-type":
+            "application/json; charset=utf-8",
+
+          "cache-control":
+            "no-store, max-age=0"
+        }
+      }
+    );
   }
 };
 
