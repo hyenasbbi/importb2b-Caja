@@ -1,0 +1,9 @@
+{
+  "name": "importb2b-control-financiero",
+  "version": "0.1.0",
+  "private": true,
+  "description": "IMPORTB2B Control Financiero — Netlify + Supabase",
+  "engines": {
+    "node": ">=20"
+  }
+}
