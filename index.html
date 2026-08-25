@@ -218,20 +218,39 @@ td input,td select{min-width:100px;padding:7px;min-height:34px}
     <strong>Nuevo pedido</strong><span class="badge">Desplegar</span>
   </div>
   <div class="drop-body">
-    <div class="grid">
-      <div><label>Fecha</label><input type="date" id="fechaPedido"></div>
-      <div><label>Cotización USDT</label><input type="number" id="dolarNuevo" value="1480" oninput="actualizarResumenTemporal()"></div>
-      <div><label>Costo de envío</label><input type="number" step="0.01" id="envioNuevo" value="0" oninput="actualizarResumenTemporal()"></div>
-      <div><label>Moneda del envío</label><select id="monedaEnvioNuevo" onchange="actualizarResumenTemporal()"><option value="USDT">USDT</option><option value="ARS">ARS</option></select></div>
-      <div><label>Categoría</label><select id="categoriaNuevo"></select></div>
-      <div><label>Producto</label><input id="productoNuevo" placeholder="Ej: Argentina 2006"></div>
-      <div><label>Detalle</label><input id="detalleNuevo" placeholder="Ej: Messi"></div>
-      <div><label>Costo USD real</label><input type="number" step="0.01" id="costoUsdNuevo"></div>
-      <div><label>Costo USD original (opcional)</label><input type="number" step="0.01" id="originalUsdNuevo"></div>
-      <div><label>Cantidad</label><input type="number" id="cantidadNuevo" value="1"></div>
+
+    <div class="panel" style="margin:0 0 14px;padding:14px">
+      <h3 style="margin-bottom:10px">1. Datos generales y envío</h3>
+      <div class="grid">
+        <div><label>Fecha</label><input type="date" id="fechaPedido"></div>
+        <div><label>Cotización USDT del pedido</label><input type="number" id="dolarNuevo" value="1480" oninput="actualizarResumenTemporal()"></div>
+        <div><label>Costo total del envío</label><input type="number" step="0.01" id="envioNuevo" value="0" oninput="actualizarResumenTemporal()"></div>
+        <div>
+          <label>Moneda en la que pagaste el envío</label>
+          <select id="monedaEnvioNuevo" onchange="actualizarResumenTemporal()">
+            <option value="USDT">USDT</option>
+            <option value="ARS">ARS</option>
+          </select>
+        </div>
+      </div>
+      <div id="envioConversionInfo" class="notice" style="margin:10px 0 0">
+        El envío se distribuirá automáticamente entre todas las unidades cargadas en este pedido.
+      </div>
     </div>
-    <div class="actions"><button class="btn green" onclick="agregarTemporal()">Agregar al pedido</button></div>
-    <h3 style="margin-top:16px">Pedido en carga</h3>
+
+    <div class="panel" style="margin:0;padding:14px">
+      <h3 style="margin-bottom:10px">2. Cargar productos</h3>
+      <div class="grid">
+        <div><label>Categoría</label><select id="categoriaNuevo"></select></div>
+        <div><label>Producto</label><input id="productoNuevo" placeholder="Ej: Argentina 2006"></div>
+        <div><label>Detalle</label><input id="detalleNuevo" placeholder="Ej: Messi"></div>
+        <div><label>Costo proveedor USDT por unidad</label><input type="number" step="0.01" id="costoProveedorNuevo" placeholder="Ej: 18"></div>
+        <div><label>Cantidad</label><input type="number" id="cantidadNuevo" value="1"></div>
+      </div>
+      <div class="actions"><button class="btn green" onclick="agregarTemporal()">Agregar al pedido</button></div>
+    </div>
+
+    <h3 style="margin-top:18px">Pedido en carga</h3>
     <div id="pedidoTemporal"></div>
     <div class="actions"><button class="btn danger" onclick="finalizarPedido()">Finalizar pedido</button></div>
   </div>
@@ -1142,18 +1161,27 @@ function agregarTemporal(){
   const categoria=document.getElementById("categoriaNuevo").value;
   const producto=document.getElementById("productoNuevo").value.trim();
   const detalle=document.getElementById("detalleNuevo").value.trim()||"Sin detalle";
-  const costoUsd=Number(document.getElementById("costoUsdNuevo").value);
-  const originalRaw=document.getElementById("originalUsdNuevo").value;
-  const originalUsd=originalRaw===""?null:Number(originalRaw);
+  const costoProveedor=Number(document.getElementById("costoProveedorNuevo").value);
   const dolar=Number(document.getElementById("dolarNuevo").value);
   const cantidad=Number(document.getElementById("cantidadNuevo").value);
 
-  if(!producto||!(costoUsd>=0)||!(dolar>0)||!(cantidad>0)){alert("Completá producto, costo USD, dólar y cantidad.");return}
-  temporal.push({categoria,producto,detalle,cantidad,originalUsd,costoUsd,dolar,costoArs:costoUsd*dolar});
+  if(!producto || !(costoProveedor>=0) || !(dolar>0) || !(cantidad>0)){
+    alert("Completá producto, costo proveedor USDT, cotización y cantidad.");
+    return;
+  }
+
+  temporal.push({
+    categoria,
+    producto,
+    detalle,
+    cantidad,
+    costoUsd:costoProveedor,
+    dolar
+  });
+
   document.getElementById("productoNuevo").value="";
   document.getElementById("detalleNuevo").value="";
-  document.getElementById("costoUsdNuevo").value="";
-  document.getElementById("originalUsdNuevo").value="";
+  document.getElementById("costoProveedorNuevo").value="";
   document.getElementById("cantidadNuevo").value=1;
   renderTemporal();
 }
@@ -1170,12 +1198,26 @@ function calcularResumenTemporal(){
   const investmentArs=rate>0?investment*rate:0;
   return {rate,shippingInput,shippingCurrency,units,merchandise,shippingUsdt,shippingPerUnit,investment,investmentArs};
 }
-function actualizarResumenTemporal(){renderTemporal();}
+function pintarInfoEnvio(r){
+  const info=document.getElementById("envioConversionInfo");
+  if(!info)return;
+  if(r.shippingCurrency==="ARS"){
+    info.innerHTML=`Envío ingresado: <strong>${money(r.shippingInput)}</strong> · Equivalente al momento del pedido: <strong>${usd(r.shippingUsdt)}</strong>. ${r.units>0?`Distribución actual: <strong>${usd(r.shippingPerUnit)} por unidad</strong> sobre ${r.units} unidades.`:"Se distribuirá cuando cargues las unidades."}`;
+  }else{
+    info.innerHTML=`Envío ingresado: <strong>${usd(r.shippingInput)}</strong>. ${r.units>0?`Distribución actual: <strong>${usd(r.shippingPerUnit)} por unidad</strong> sobre ${r.units} unidades.`:"Se distribuirá cuando cargues las unidades."}`;
+  }
+}
+function actualizarResumenTemporal(){
+  const r=calcularResumenTemporal();
+  pintarInfoEnvio(r);
+  renderTemporal();
+}
 function renderTemporal(){
   const div=document.getElementById("pedidoTemporal");
   const r=calcularResumenTemporal();
+  pintarInfoEnvio(r);
   if(!temporal.length){div.innerHTML=`<div class="empty">No hay productos cargados.</div><div class="cards" style="margin-top:10px"><div class="card"><span class="label">Unidades</span><strong>0</strong></div><div class="card"><span class="label">Mercadería</span><strong>USD 0.00</strong></div><div class="card"><span class="label">Envío USDT</span><strong>${usd(r.shippingUsdt)}</strong></div><div class="card green"><span class="label">Inversión total</span><strong>${usd(r.investment)}</strong></div></div>`;return;}
-  div.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Producto</th><th>Detalle</th><th>Cant.</th><th>Proveedor USD/u.</th><th>Envío/u.</th><th>Costo real USD/u.</th><th>Costo real ARS/u.</th><th></th></tr></thead><tbody>${temporal.map((i,x)=>{const realUsd=Number(i.costoUsd||0)+r.shippingPerUnit;const realArs=realUsd*r.rate;return `<tr><td>${esc(i.categoria)}</td><td>${esc(i.producto)}</td><td>${esc(i.detalle)}</td><td>${i.cantidad}</td><td>${usd(i.costoUsd)}</td><td>${usd(r.shippingPerUnit)}</td><td><strong>${usd(realUsd)}</strong></td><td><strong>${money(realArs)}</strong></td><td><button class="btn danger small" onclick="temporal.splice(${x},1);renderTemporal()">Eliminar</button></td></tr>`;}).join("")}</tbody></table></div><div class="cards" style="margin-top:10px"><div class="card"><span class="label">Unidades compradas</span><strong>${r.units}</strong></div><div class="card"><span class="label">Mercadería</span><strong>${usd(r.merchandise)}</strong></div><div class="card"><span class="label">Envío USDT</span><strong>${usd(r.shippingUsdt)}</strong></div><div class="card"><span class="label">Envío por unidad</span><strong>${usd(r.shippingPerUnit)}</strong></div><div class="card green"><span class="label">Inversión total</span><strong>${usd(r.investment)}</strong></div><div class="card"><span class="label">Cotización USDT</span><strong>${money(r.rate)}</strong></div><div class="card"><span class="label">Total equivalente ARS</span><strong>${money(r.investmentArs)}</strong></div></div>`;
+  div.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Producto</th><th>Detalle</th><th>Cant.</th><th>Costo proveedor USDT/u.</th><th>Envío devengado/u.</th><th>Costo real USDT/u.</th><th>Costo real ARS/u.</th><th></th></tr></thead><tbody>${temporal.map((i,x)=>{const realUsd=Number(i.costoUsd||0)+r.shippingPerUnit;const realArs=realUsd*r.rate;return `<tr><td>${esc(i.categoria)}</td><td>${esc(i.producto)}</td><td>${esc(i.detalle)}</td><td>${i.cantidad}</td><td>${usd(i.costoUsd)}</td><td>${usd(r.shippingPerUnit)}</td><td><strong>${usd(realUsd)}</strong></td><td><strong>${money(realArs)}</strong></td><td><button class="btn danger small" onclick="temporal.splice(${x},1);renderTemporal()">Eliminar</button></td></tr>`;}).join("")}</tbody></table></div><div class="cards" style="margin-top:10px"><div class="card"><span class="label">Unidades compradas</span><strong>${r.units}</strong></div><div class="card"><span class="label">Mercadería</span><strong>${usd(r.merchandise)}</strong></div><div class="card"><span class="label">Envío USDT</span><strong>${usd(r.shippingUsdt)}</strong></div><div class="card"><span class="label">Envío por unidad</span><strong>${usd(r.shippingPerUnit)}</strong></div><div class="card green"><span class="label">Inversión total</span><strong>${usd(r.investment)}</strong></div><div class="card"><span class="label">Cotización USDT</span><strong>${money(r.rate)}</strong></div><div class="card"><span class="label">Total equivalente ARS</span><strong>${money(r.investmentArs)}</strong></div></div>`;
 }
 
 async function finalizarPedido(){
