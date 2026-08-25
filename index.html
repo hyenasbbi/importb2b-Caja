@@ -104,7 +104,7 @@
         <div class="topbar-actions">
           <div id="connectionPill" class="status-pill"><span class="dot"></span><span>Conectando</span></div>
           <button id="notificationBellBtn" class="notification-bell" type="button" title="Notificaciones" aria-label="Notificaciones">
-            <span class="notification-bell-icon">●</span>
+            <span class="notification-bell-icon" aria-hidden="true">🔔</span>
             <span id="notificationUnreadBadge" class="notification-badge is-hidden">0</span>
           </button>
           <button id="refreshAllBtn" class="icon-btn" title="Actualizar">↻</button>
@@ -137,8 +137,11 @@
             </div>
 
             <div class="cash-action-row">
+              <div class="cash-action-copy">
+                <span>CONVERSIÓN INTERNA</span>
+                <small>Usá transferencia o efectivo disponible para comprar USDT sin registrarlo como gasto operativo.</small>
+              </div>
               <button id="openArsToUsdtBtn" class="btn btn-outline btn-convert-usdt" type="button">⇄ CAMBIAR ARS A USDT</button>
-              <small>Usá transferencia o efectivo disponible para comprar USDT sin registrarlo como gasto operativo.</small>
             </div>
 
             <div id="transferBreakdown" class="cash-breakdown is-hidden">
