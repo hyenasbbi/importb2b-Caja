@@ -101,8 +101,7 @@ function modalId(name){
     settleFunds:"settleFundsModal",
     receivable:"receivableModal",
     receivablePayment:"receivablePaymentModal",
-    internalTransfer:"internalTransferModal",
-    arsToUsdt:"arsToUsdtModal"
+    internalTransfer:"internalTransferModal"
   })[name];
 }
 
@@ -153,7 +152,7 @@ function bindUI(){
   $("newSettlementBtn").addEventListener("click", () => openSettlementModal());
   $("newReceivableBtn").addEventListener("click", () => openReceivableModal());
   $("newInternalTransferBtn").addEventListener("click", openInternalTransferModal);
-  $("openArsToUsdtBtn").addEventListener("click", openArsToUsdtModal);
+  $("openFundManagerBtn").addEventListener("click", openInternalTransferModal);
 
   $$("[data-close]").forEach(el => el.addEventListener("click", () => closeNamedModal(el.dataset.close)));
   $$(".nav-item,.mobile-nav-item").forEach(btn => btn.addEventListener("click", () => switchView(btn.dataset.view)));
@@ -203,21 +202,24 @@ function bindUI(){
   $("receivablePaymentMethod").addEventListener("change", syncReceivablePaymentHolderLabel);
   $("receivablePaymentForm").addEventListener("submit", recordReceivablePayment);
 
+  $$("#internalModeSegment .fund-mode-tab").forEach(btn => btn.addEventListener("click", () => {
+    $("internalOperationMode").value = btn.dataset.mode;
+    syncInternalOperationMode();
+  }));
   $("internalCurrency").addEventListener("change", syncInternalTransferCurrency);
   $("internalFromMethod").addEventListener("change", validateInternalTransferSides);
   $("internalToMethod").addEventListener("change", validateInternalTransferSides);
   $("internalFromHolder").addEventListener("change", validateInternalTransferSides);
   $("internalToHolder").addEventListener("change", validateInternalTransferSides);
+  $("conversionArsAmount").addEventListener("input", updateUnifiedConversionPreview);
   $("internalTransferForm").addEventListener("submit", saveInternalTransfer);
-  $("conversionArsAmount").addEventListener("input", updateArsToUsdtPreview);
-  $("arsToUsdtForm").addEventListener("submit", saveArsToUsdtConversion);
 
   ["filterKind","filterMethod","filterSearch"].forEach(id => $(id).addEventListener("input", renderMovements));
 
   document.addEventListener("click", handleActionClick);
   window.addEventListener("keydown", e => {
     if(e.key === "Escape"){
-      ["movement","settlement","settleFunds","receivable","receivablePayment","internalTransfer","arsToUsdt"].forEach(closeNamedModal);
+      ["movement","settlement","settleFunds","receivable","receivablePayment","internalTransfer"].forEach(closeNamedModal);
     }
   });
 }
@@ -577,7 +579,7 @@ function renderQuote(){
   $("quoteUpdated").textContent = time;
   $("quoteUpdatedLarge").textContent = time;
   $("quoteSourceBadge").textContent = (state.quote.source || "SIN DATOS").toUpperCase();
-  if($("conversionBuyQuote")) updateArsToUsdtPreview();
+  if($("conversionBuyQuote")) updateUnifiedConversionPreview();
 }
 
 function renderDashboard(){
@@ -1435,17 +1437,52 @@ async function recordReceivablePayment(event){
 function openInternalTransferModal(){
   $("internalTransferForm").reset();
   $("internalTransferMessage").textContent = "";
+  $("internalOperationMode").value = "move";
+
   $("internalCurrency").value = "ARS";
   $("internalFromMethod").value = "transferencia";
   $("internalFromHolder").value = "nahuel";
   $("internalToMethod").value = "transferencia";
   $("internalToHolder").value = "esteban";
+
+  $("conversionFromMethod").value = "transferencia";
+  $("conversionFromHolder").value = "nahuel";
+  $("conversionToHolder").value = "nahuel";
+
   syncInternalTransferCurrency();
+  syncInternalOperationMode();
+  updateUnifiedConversionPreview();
+
   $("internalTransferModal").classList.remove("is-hidden");
+}
+
+function syncInternalOperationMode(){
+  const mode = $("internalOperationMode").value;
+  const isConvert = mode === "convert";
+
+  $$("#internalModeSegment .fund-mode-tab").forEach(btn => {
+    btn.classList.toggle("is-active", btn.dataset.mode === mode);
+  });
+
+  $("internalMoveSection").classList.toggle("is-hidden", isConvert);
+  $("internalConvertSection").classList.toggle("is-hidden", !isConvert);
+
+  $("internalTransferSubmitBtn").textContent = isConvert
+    ? "CONFIRMAR CAMBIO A USDT"
+    : "REGISTRAR MOVIMIENTO";
+
+  $("internalOperationHint").textContent = isConvert
+    ? "CONVERSIÓN INTERNA · ARS → USDT"
+    : "MOVIMIENTO INTERNO · MISMA MONEDA";
+
+  $("internalTransferMessage").textContent = "";
+  if(isConvert) updateUnifiedConversionPreview();
+  else validateInternalTransferSides();
 }
 
 function syncInternalTransferCurrency(){
   const isUsdt = $("internalCurrency").value === "USDT";
+
   ["internalFromMethod","internalToMethod"].forEach(id => {
     const select = $(id);
     if(isUsdt){
@@ -1453,37 +1490,99 @@ function syncInternalTransferCurrency(){
       select.value = "usdt";
       select.disabled = true;
     }else{
+      const current = select.value;
       select.innerHTML = '<option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option>';
       select.disabled = false;
+      select.value = ["transferencia","efectivo"].includes(current) ? current : "transferencia";
     }
   });
+
   $("internalQuoteNote").classList.toggle("is-hidden", !isUsdt);
   validateInternalTransferSides();
 }
 
 function validateInternalTransferSides(){
+  if($("internalOperationMode").value !== "move") return true;
+
   const same = $("internalFromMethod").value === $("internalToMethod").value &&
                $("internalFromHolder").value === $("internalToHolder").value;
+
   $("internalTransferMessage").textContent = same
     ? "El origen y el destino deben ser diferentes."
     : "";
+
+  return !same;
+}
+
+function updateUnifiedConversionPreview(){
+  if(!$("conversionBuyQuote")) return;
+
+  const ars = Number($("conversionArsAmount").value || 0);
+  const quote = Number(state.quote.buy || 0);
+  const usdt = quote > 0 ? ars / quote : 0;
+
+  $("conversionBuyQuote").textContent = quote ? money(quote, 2) : "$ —";
+  $("conversionUsdtPreview").textContent = `${num(usdt, 2)} USDT`;
 }
 
 async function saveInternalTransfer(event){
   event.preventDefault();
   $("internalTransferMessage").textContent = "";
 
+  const mode = $("internalOperationMode").value;
+
+  if(mode === "convert"){
+    const arsAmount = Number($("conversionArsAmount").value || 0);
+    const buyQuote = Number(state.quote.buy || 0);
+
+    if(!arsAmount || arsAmount <= 0){
+      $("internalTransferMessage").textContent = "Ingresá un importe ARS válido.";
+      return;
+    }
+
+    if(!buyQuote){
+      $("internalTransferMessage").textContent = "No hay cotización de compra USDT disponible. Actualizá Binance primero.";
+      return;
+    }
+
+    if(state.demo){
+      closeNamedModal("internalTransfer");
+      return;
+    }
+
+    const { error } = await supabase.rpc("record_ars_to_usdt_conversion", {
+      p_ars_amount:arsAmount,
+      p_from_method:$("conversionFromMethod").value,
+      p_from_holder:$("conversionFromHolder").value,
+      p_to_holder:$("conversionToHolder").value,
+      p_quote_ars:buyQuote,
+      p_description:$("conversionDescription").value.trim() || null
+    });
+
+    if(error){
+      $("internalTransferMessage").textContent = error.message;
+      return;
+    }
+
+    closeNamedModal("internalTransfer");
+    await Promise.all([loadMovements(), loadAudit()]);
+    renderAll();
+    return;
+  }
+
   const currency = $("internalCurrency").value;
-  const amount = Number($("internalAmount").value);
+  const amount = Number($("internalAmount").value || 0);
   const fromMethod = $("internalFromMethod").value;
   const fromHolder = $("internalFromHolder").value;
   const toMethod = $("internalToMethod").value;
   const toHolder = $("internalToHolder").value;
 
-  if(fromMethod === toMethod && fromHolder === toHolder){
-    $("internalTransferMessage").textContent = "El origen y el destino deben ser diferentes.";
+  if(!amount || amount <= 0){
+    $("internalTransferMessage").textContent = "Ingresá un importe válido.";
     return;
   }
+
+  if(!validateInternalTransferSides()) return;
 
   if(currency === "USDT" && !state.quote.sell){
     $("internalTransferMessage").textContent = "No hay cotización USDT disponible. Actualizá Binance primero.";
@@ -1516,63 +1615,5 @@ async function saveInternalTransfer(event){
   renderAll();
 }
 
-
-function openArsToUsdtModal(){
-  $("arsToUsdtForm").reset();
-  $("arsToUsdtMessage").textContent = "";
-  $("conversionFromMethod").value = "transferencia";
-  $("conversionFromHolder").value = "nahuel";
-  $("conversionToHolder").value = "nahuel";
-  updateArsToUsdtPreview();
-  $("arsToUsdtModal").classList.remove("is-hidden");
-}
-
-function updateArsToUsdtPreview(){
-  const ars = Number($("conversionArsAmount")?.value || 0);
-  const quote = Number(state.quote.buy || 0);
-  if($("conversionBuyQuote")) $("conversionBuyQuote").textContent = quote ? money(quote, 2) : "$ —";
-  const usdt = quote > 0 ? ars / quote : 0;
-  if($("conversionUsdtPreview")) $("conversionUsdtPreview").textContent = `${num(usdt, 2)} USDT`;
-}
-
-async function saveArsToUsdtConversion(event){
-  event.preventDefault();
-  $("arsToUsdtMessage").textContent = "";
-
-  const arsAmount = Number($("conversionArsAmount").value || 0);
-  const buyQuote = Number(state.quote.buy || 0);
-
-  if(!arsAmount || arsAmount <= 0){
-    $("arsToUsdtMessage").textContent = "Ingresá un importe ARS válido.";
-    return;
-  }
-  if(!buyQuote){
-    $("arsToUsdtMessage").textContent = "No hay cotización de compra USDT disponible. Actualizá Binance primero.";
-    return;
-  }
-
-  if(state.demo){
-    closeNamedModal("arsToUsdt");
-    return;
-  }
-
-  const { error } = await supabase.rpc("record_ars_to_usdt_conversion", {
-    p_ars_amount:arsAmount,
-    p_from_method:$("conversionFromMethod").value,
-    p_from_holder:$("conversionFromHolder").value,
-    p_to_holder:$("conversionToHolder").value,
-    p_quote_ars:buyQuote,
-    p_description:$("conversionDescription").value.trim() || null
-  });
-
-  if(error){
-    $("arsToUsdtMessage").textContent = error.message;
-    return;
-  }
-
-  closeNamedModal("arsToUsdt");
-  await Promise.all([loadMovements(), loadAudit()]);
-  renderAll();
-}
 
 init();
