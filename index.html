@@ -1,558 +1,1427 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#080909">
-  <meta name="description" content="IMPORTB2B Control Financiero">
-  <title>IMPORTB2B · Control Financiero</title>
-  <link rel="icon" type="image/png" href="/assets/brand/favicon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png">
-  <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="./assets/css/styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>IMPORTB2B - Gestión Online</title>
+<meta name="theme-color" content="#111214">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="./manifest.webmanifest">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0d0f10;--panel:#17191c;--panel2:#202328;--line:#2d3035;
+  --text:#fff;--muted:#a8adb5;--red:#e50914;--green:#28b76b;
+  --gold:#d8ad4b;--blue:#4d8dff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;max-width:100%;overflow-x:hidden}
+body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+header{
+  position:sticky;top:0;z-index:20;background:#111214;border-bottom:3px solid var(--red);
+  padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px
+}
+.logo{font-size:26px;font-weight:900}.logo span{color:var(--red)}
+.userbox{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.container{width:min(1400px,100%);margin:auto;padding:14px}
+.panel,.drop{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:14px;margin-bottom:14px
+}
+h1,h2,h3{margin:0 0 12px}
+h2{font-size:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}
+input,select{
+  width:100%;border:1px solid transparent;background:#f7f7f7;color:#111;
+  border-radius:8px;padding:10px;min-height:40px
+}
+input:focus,select:focus{outline:2px solid rgba(229,9,20,.28)}
+.btn{
+  border:0;border-radius:8px;padding:10px 13px;color:white;background:var(--red);
+  font-weight:700
+}
+.btn.green{background:var(--green)}
+.btn.dark{background:#2a2d31}
+.btn.gold{background:#9a7732}
+.btn.small{padding:7px 9px;font-size:12px}
+.btn.danger{background:#a60d17}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.card{
+  border-radius:12px;padding:12px;background:var(--panel2);border:1px solid var(--line);
+  text-align:center;min-height:76px;display:flex;flex-direction:column;justify-content:center
+}
+.card.clickable{cursor:pointer;transition:.15s}
+.card.clickable:hover{transform:translateY(-1px)}
+.card.green{border-color:rgba(40,183,107,.35);background:rgba(40,183,107,.08)}
+.card.gold{border-color:rgba(216,173,75,.35);background:rgba(216,173,75,.08)}
+.card .label{font-size:12px;color:var(--muted)}
+.card strong{font-size:18px;margin-top:5px}
+.tabs,.cats{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.tab-btn,.cat-btn{
+  flex:0 0 auto;border:0;border-radius:8px;padding:9px 11px;color:#fff;background:#292c30;font-weight:700
+}
+.active-btn{background:var(--red)!important}
+.tab{display:none}.tab.active{display:block}
+.drop{padding:0;overflow:hidden}
+.drop-head,.order-head{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:13px;background:#23262a;cursor:pointer
+}
+.drop-body,.order-body{display:none;padding:13px}
+.drop.active .drop-body,.order.active .order-body{display:block}
+.badge{
+  display:inline-block;padding:4px 8px;border-radius:999px;background:var(--red);
+  font-size:11px;font-weight:700
+}
+.order{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.order-head{background:#22252a}
+.order-title{min-width:0}
+.order-title small{color:var(--muted)}
+.order-badges{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
+.table-wrap{width:100%;overflow:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
+table{width:100%;border-collapse:collapse;min-width:720px;background:#17191c}
+th,td{padding:8px;border-bottom:1px solid var(--line);font-size:12px;text-align:center;vertical-align:middle}
+th{background:#25282d;position:sticky;top:0}
+td input,td select{min-width:100px;padding:7px;min-height:34px}
+.search{margin-bottom:10px}
+.login-shell{
+  min-height:100vh;display:grid;place-items:center;padding:16px;background:linear-gradient(180deg,#111214,#090a0b)
+}
+.login-card{
+  width:min(430px,100%);background:#181a1d;border:1px solid var(--line);border-radius:16px;padding:20px
+}
+.login-card .logo{margin-bottom:18px}
+.status{font-size:12px;color:var(--muted);margin-top:8px}
+.empty{padding:18px;text-align:center;color:var(--muted)}
+.notice{padding:10px;border-radius:9px;background:#202328;color:var(--muted);font-size:12px;margin-bottom:10px}
+.ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.ship-card{border:1px solid var(--line);background:#1c1f23;border-radius:12px;padding:12px}
+.ship-card.ready{border-color:rgba(40,183,107,.55);background:rgba(40,183,107,.08)}
+.ship-card.issue{border-color:rgba(229,9,20,.55);background:rgba(229,9,20,.08)}
+.ship-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:9px}
+.ship-meta{font-size:12px;color:var(--muted);line-height:1.5}
+.status-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:800}
+.st-ready{background:rgba(40,183,107,.18);color:#88efb5}
+.st-received{background:rgba(40,183,107,.12);color:#a8f3c8}
+.st-transit{background:rgba(77,141,255,.15);color:#9fc0ff}
+.st-center{background:rgba(216,173,75,.16);color:#f0ca73}
+.st-carrier{background:rgba(216,173,75,.1);color:#e7c36f}
+.st-issue{background:rgba(229,9,20,.16);color:#ff8e95}
+.st-none{background:#2b2e33;color:#bbb}
+.timeline{margin-top:10px;padding-left:12px;border-left:2px solid #35383d}
+.event{padding:0 0 12px 10px;position:relative}
+.event:before{content:"";position:absolute;width:8px;height:8px;border-radius:50%;background:var(--red);left:-15px;top:4px}
+.event strong{display:block;font-size:12px}.event small{color:var(--muted);line-height:1.4}
+.filterbar{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px}
+.filter-btn{flex:0 0 auto;border:0;border-radius:999px;padding:7px 10px;background:#292c30;color:#fff;font-size:12px;font-weight:700}
+.filter-btn.active{background:var(--red)}
+.order-ships{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.track-inline{font-size:11px;color:var(--muted)}
+@media(max-width:850px){
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  header{align-items:flex-start}
+  .userbox{flex-direction:column;align-items:flex-end}
+}
+@media(max-width:600px){
+  .container{padding:9px}
+  header{padding:12px}.logo{font-size:22px}
+  .panel{padding:11px;border-radius:12px}
+  .cards{gap:7px}
+  .card{min-height:70px;padding:9px}
+  .card strong{font-size:15px}
+  h2{font-size:17px}
+  .grid{grid-template-columns:1fr}
+  .actions .btn{flex:1 1 100%}
+  .order-head,.drop-head{align-items:flex-start;flex-direction:column}
+  .order-badges{justify-content:flex-start}
+  table{min-width:680px}
+}
+</style>
 </head>
 <body>
-  <div class="watermark-grid" aria-hidden="true"></div>
 
-  <!-- LOGIN -->
-  <section id="loginView" class="login-view">
-    <div class="login-shell">
-      <div class="login-brand">
-        <div class="brand-rule"></div>
-        <div class="official-logo-slot">
-          <img id="loginLogo" src="./assets/brand/logo.png" alt="Logo oficial IMPORTB2B"
-               onerror="this.style.display='none'; document.getElementById('logoMissingLogin').style.display='flex';">
-          <div id="logoMissingLogin" class="logo-missing">
-            <strong>LOGO OFICIAL</strong>
-            <span>Colocar PNG/SVG en assets/brand</span>
-          </div>
-        </div>
-        <div class="eyebrow">IMPORTB2B</div>
-        <h1>CONTROL<br><span>FINANCIERO</span></h1>
-        <p>Caja, liquidaciones, deudores y USDT compartidos entre socios.</p>
-        <div class="brand-rule brand-rule--short"></div>
+<div id="loginView" class="login-shell">
+  <div class="login-card">
+    <div class="logo">IMPORT<span>B2B</span></div>
+    <h2>Ingresar al sistema</h2>
+    <label>Email</label>
+    <input id="loginEmail" type="email" autocomplete="username">
+    <label>Contraseña</label>
+    <input id="loginPassword" type="password" autocomplete="current-password">
+    <div class="actions"><button class="btn green" onclick="login()">Ingresar</button></div>
+    <div id="loginStatus" class="status">Tus datos se guardarán en Supabase y serán los mismos en todos los dispositivos.</div>
+  </div>
+</div>
+
+<div id="appView" class="hidden">
+<header>
+  <div class="logo">IMPORT<span>B2B</span></div>
+  <div class="userbox">
+    <span id="userEmail"></span>
+    <button id="pushBtn" class="btn dark small" onclick="activarNotificaciones()">🔔 Notificaciones</button>
+    <button class="btn dark small" onclick="logout()">Salir</button>
+  </div>
+</header>
+
+<div class="container">
+
+<div class="panel">
+  <h2>Resumen general</h2>
+  <div class="cards">
+    <div class="card clickable" onclick="openMainTab('minorista')">
+      <span class="label">Stock total</span><strong id="stockTotal">0</strong>
+    </div>
+    <div class="card green clickable" onclick="openMainTab('pedidos')">
+      <span class="label">Inversión USD total</span><strong id="totalUsd">USD 0</strong>
+    </div>
+    <div class="card clickable" onclick="openMainTab('pedidos')">
+      <span class="label">Costo stock ARS total</span><strong id="totalArs">$0</strong>
+    </div>
+    <div class="card gold clickable" onclick="openMainTab('minorista')">
+      <span class="label">Ganancia esperada minorista</span><strong id="gananciaMinorista">$0</strong>
+    </div>
+    <div class="card clickable" style="border-color:rgba(229,9,20,.35);background:rgba(229,9,20,.08)" onclick="openMainTab('gastos')">
+      <span class="label">Gastos registrados</span><strong id="totalGastos">$0</strong>
+    </div>
+  </div>
+</div>
+
+<div id="pushNotice" class="notice hidden" style="margin-bottom:14px">
+  <strong>Notificaciones:</strong> <span id="pushNoticeText"></span>
+</div>
+
+<div class="drop" id="margenesBox">
+  <div class="drop-head" onclick="toggleDrop('margenesBox')">
+    <strong>Márgenes por categoría</strong><span class="badge">Editar</span>
+  </div>
+  <div class="drop-body">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Categoría</th><th>Minorista %</th><th>Mayorista 6 %</th><th>Mayorista 12 %</th><th>Mayorista 36 %</th></tr></thead>
+        <tbody id="tablaMargenes"></tbody>
+      </table>
+    </div>
+    <div class="actions"><button class="btn green" onclick="guardarMargenes()">Guardar cambios</button></div>
+  </div>
+</div>
+
+<div class="drop" id="nuevoPedidoBox">
+  <div class="drop-head" onclick="toggleDrop('nuevoPedidoBox')">
+    <strong>Nuevo pedido</strong><span class="badge">Desplegar</span>
+  </div>
+  <div class="drop-body">
+    <div class="grid">
+      <div><label>Fecha</label><input type="date" id="fechaPedido"></div>
+      <div><label>Cotización USDT</label><input type="number" id="dolarNuevo" value="1480" oninput="actualizarResumenTemporal()"></div>
+      <div><label>Costo de envío</label><input type="number" step="0.01" id="envioNuevo" value="0" oninput="actualizarResumenTemporal()"></div>
+      <div><label>Moneda del envío</label><select id="monedaEnvioNuevo" onchange="actualizarResumenTemporal()"><option value="USDT">USDT</option><option value="ARS">ARS</option></select></div>
+      <div><label>Categoría</label><select id="categoriaNuevo"></select></div>
+      <div><label>Producto</label><input id="productoNuevo" placeholder="Ej: Argentina 2006"></div>
+      <div><label>Detalle</label><input id="detalleNuevo" placeholder="Ej: Messi"></div>
+      <div><label>Costo USD real</label><input type="number" step="0.01" id="costoUsdNuevo"></div>
+      <div><label>Costo USD original (opcional)</label><input type="number" step="0.01" id="originalUsdNuevo"></div>
+      <div><label>Cantidad</label><input type="number" id="cantidadNuevo" value="1"></div>
+    </div>
+    <div class="actions"><button class="btn green" onclick="agregarTemporal()">Agregar al pedido</button></div>
+    <h3 style="margin-top:16px">Pedido en carga</h3>
+    <div id="pedidoTemporal"></div>
+    <div class="actions"><button class="btn danger" onclick="finalizarPedido()">Finalizar pedido</button></div>
+  </div>
+</div>
+
+
+<div class="drop" id="nuevoGastoBox">
+  <div class="drop-head" onclick="toggleDrop('nuevoGastoBox')">
+    <strong>Registrar gasto</strong><span class="badge">Desplegar</span>
+  </div>
+  <div class="drop-body">
+    <div class="grid">
+      <div><label>Fecha</label><input type="date" id="gastoFecha"></div>
+      <div>
+        <label>Tipo de gasto</label>
+        <select id="gastoTipo">
+          <option>Materia prima</option>
+          <option>Envío</option>
+          <option>Impuesto</option>
+          <option>Logística</option>
+          <option>Proveedor</option>
+          <option>Servicio</option>
+          <option>Comisión</option>
+          <option>Publicidad</option>
+          <option>Otro</option>
+        </select>
       </div>
+      <div><label>Proveedor</label><input id="gastoProveedor" placeholder="Ej: Correo / proveedor"></div>
+      <div><label>Descripción</label><input id="gastoDescripcion" placeholder="Detalle del gasto"></div>
+      <div><label>Monto ARS</label><input type="number" step="0.01" id="gastoArs"></div>
+      <div><label>Monto USD (opcional)</label><input type="number" step="0.01" id="gastoUsd"></div>
+      <div><label>Cotización dólar (opcional)</label><input type="number" step="0.01" id="gastoDolar"></div>
+    </div>
+    <div class="actions"><button class="btn green" onclick="guardarGasto()">Guardar gasto</button></div>
+  </div>
+</div>
 
-      <div class="login-panel">
-        <div class="login-card">
-          <div class="eyebrow">ACCESO PRIVADO</div>
-          <h2>Ingresar</h2>
-          <p class="muted">Cada socio utiliza su propia cuenta.</p>
 
-          <form id="loginForm" class="form-stack">
-            <label>
-              <span>Email</span>
-              <input id="loginEmail" type="email" autocomplete="email" placeholder="tu@email.com" required>
-            </label>
-            <label>
-              <span>Contraseña</span>
-              <input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" required>
-            </label>
-            <button class="btn btn-primary btn-block" type="submit">INGRESAR</button>
-          </form>
-
-          <button id="demoLoginBtn" class="btn btn-ghost btn-block is-hidden" type="button">VER BETA EN MODO DEMO</button>
-          <div id="loginMessage" class="form-message"></div>
-          <div class="secure-note">● SESIÓN PROTEGIDA · SUPABASE AUTH</div>
-        </div>
+<div class="drop" id="nuevoSeguimientoBox">
+  <div class="drop-head" onclick="toggleDrop('nuevoSeguimientoBox')">
+    <strong>Agregar seguimiento</strong><span class="badge">Desplegar</span>
+  </div>
+  <div class="drop-body">
+    <div class="grid">
+      <div>
+        <label>Pedido relacionado</label>
+        <select id="shipmentOrder"></select>
+      </div>
+      <div>
+        <label>Transportista</label>
+        <select id="shipmentCarrier"><option value="Via Cargo">Vía Cargo</option></select>
+      </div>
+      <div>
+        <label>Número de seguimiento</label>
+        <input id="shipmentTracking" placeholder="Ej: 999037813885">
       </div>
     </div>
-  </section>
+    <div class="actions">
+      <button class="btn green" onclick="crearShipment()">Guardar seguimiento</button>
+    </div>
+    <div class="notice" style="margin-top:10px">
+      El número se registra en 17TRACK desde Supabase. La clave privada nunca se envía al navegador.
+    </div>
+  </div>
+</div>
 
-  <!-- APP -->
-  <div id="appView" class="app-shell is-hidden">
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <div class="official-logo-slot official-logo-slot--small">
-          <img src="./assets/brand/logo.png" alt="Logo oficial IMPORTB2B"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="logo-missing logo-missing--small"><strong>IB</strong></div>
+<div class="tabs" id="mainTabs">
+  <button class="tab-btn active-btn" data-tab="pedidos" onclick="openTab('pedidos',this)">Pedidos</button>
+  <button class="tab-btn" data-tab="minorista" onclick="openTab('minorista',this)">Minorista</button>
+  <button class="tab-btn" data-tab="mayorista6" onclick="openTab('mayorista6',this)">Mayorista 6</button>
+  <button class="tab-btn" data-tab="mayorista12" onclick="openTab('mayorista12',this)">Mayorista 12</button>
+  <button class="tab-btn" data-tab="mayorista36" onclick="openTab('mayorista36',this)">Mayorista 36</button>
+  <button class="tab-btn" data-tab="seguimiento" onclick="openTab('seguimiento',this)">Seguimiento</button>
+  <button class="tab-btn" data-tab="gastos" onclick="openTab('gastos',this)">Gastos</button>
+  <button class="tab-btn" data-tab="csv" onclick="openTab('csv',this)">CSV</button>
+</div>
+
+<div id="pedidos" class="tab active">
+  <div class="panel">
+    <h2>Pedidos registrados</h2>
+    <input class="search" id="buscarPedidos" placeholder="Buscar por fecha, producto, detalle, categoría o pedido..." oninput="renderPedidos()">
+    <div id="listaPedidos"></div>
+  </div>
+</div>
+
+<div id="minorista" class="tab">
+  <div class="panel">
+    <h2>Stock y precios minoristas</h2>
+    <input class="search" id="buscarMinorista" placeholder="Buscar producto..." oninput="renderPrecios('minorista')">
+    <div id="catsMinorista" class="cats"></div>
+    <div id="tablaMinorista"></div>
+  </div>
+</div>
+
+<div id="mayorista6" class="tab">
+  <div class="panel">
+    <h2>Stock y precios mayorista 6 prendas</h2>
+    <input class="search" id="buscarMayorista6" placeholder="Buscar producto..." oninput="renderPrecios('mayorista6')">
+    <div id="catsMayorista6" class="cats"></div>
+    <div id="tablaMayorista6"></div>
+  </div>
+</div>
+
+<div id="mayorista12" class="tab">
+  <div class="panel">
+    <h2>Stock y precios mayorista 12 prendas</h2>
+    <input class="search" id="buscarMayorista12" placeholder="Buscar producto..." oninput="renderPrecios('mayorista12')">
+    <div id="catsMayorista12" class="cats"></div>
+    <div id="tablaMayorista12"></div>
+  </div>
+</div>
+
+<div id="mayorista36" class="tab">
+  <div class="panel">
+    <h2>Stock y precios mayorista 36 prendas</h2>
+    <input class="search" id="buscarMayorista36" placeholder="Buscar producto..." oninput="renderPrecios('mayorista36')">
+    <div id="catsMayorista36" class="cats"></div>
+    <div id="tablaMayorista36"></div>
+  </div>
+</div>
+
+
+
+<div id="seguimiento" class="tab">
+  <div class="panel">
+    <h2>Seguimiento de envíos</h2>
+    <input class="search" id="buscarSeguimiento" placeholder="Buscar guía, pedido, estado, ubicación o fecha..." oninput="renderShipments()">
+
+    <div class="cards" style="margin-bottom:12px">
+      <div class="card clickable" onclick="setTrackingFilter('IN_TRANSIT')"><span class="label">En viaje</span><strong id="shipCountTransit">0</strong></div>
+      <div class="card clickable" onclick="setTrackingFilter('ARRIVED_AT_DISTRIBUTION_CENTER')"><span class="label">En centro</span><strong id="shipCountCenter">0</strong></div>
+      <div class="card green clickable" onclick="setTrackingFilter('READY_FOR_PICKUP')"><span class="label">Para retirar</span><strong id="shipCountReady">0</strong></div>
+      <div class="card clickable" onclick="setTrackingFilter('RECEIVED')"><span class="label">Retirados</span><strong id="shipCountReceived">0</strong></div>
+    </div>
+
+    <div class="filterbar">
+      <button class="filter-btn active" data-filter="ALL" onclick="setTrackingFilter('ALL',this)">Todos</button>
+      <button class="filter-btn" data-filter="NO_UPDATES" onclick="setTrackingFilter('NO_UPDATES',this)">Sin novedades</button>
+      <button class="filter-btn" data-filter="CARRIER_RECEIVED" onclick="setTrackingFilter('CARRIER_RECEIVED',this)">Ingresados</button>
+      <button class="filter-btn" data-filter="IN_TRANSIT" onclick="setTrackingFilter('IN_TRANSIT',this)">En viaje</button>
+      <button class="filter-btn" data-filter="ARRIVED_AT_DISTRIBUTION_CENTER" onclick="setTrackingFilter('ARRIVED_AT_DISTRIBUTION_CENTER',this)">Centro distribución</button>
+      <button class="filter-btn" data-filter="READY_FOR_PICKUP" onclick="setTrackingFilter('READY_FOR_PICKUP',this)">Para retirar</button>
+      <button class="filter-btn" data-filter="RECEIVED" onclick="setTrackingFilter('RECEIVED',this)">Retirados</button>
+      <button class="filter-btn" data-filter="ISSUE" onclick="setTrackingFilter('ISSUE',this)">Incidencias</button>
+    </div>
+
+    <div class="actions" style="margin-bottom:12px">
+      <button class="btn green" onclick="toggleDrop('nuevoSeguimientoBox');document.getElementById('nuevoSeguimientoBox').scrollIntoView({behavior:'smooth'})">+ Agregar seguimiento</button>
+    </div>
+
+    <div id="shipmentsList" class="ship-grid"></div>
+  </div>
+</div>
+
+<div id="gastos" class="tab">
+  <div class="panel">
+    <h2>Gastos registrados</h2>
+    <input class="search" id="buscarGastos" placeholder="Buscar por fecha, tipo, proveedor o descripción..." oninput="renderGastos()">
+
+    <div class="cards" style="margin-bottom:12px">
+      <div class="card"><span class="label">Total gastos ARS</span><strong id="gastosTotalArs">$0</strong></div>
+      <div class="card"><span class="label">Total gastos USD</span><strong id="gastosTotalUsd">USD 0</strong></div>
+      <div class="card"><span class="label">Registros</span><strong id="gastosCantidad">0</strong></div>
+    </div>
+
+    <div class="grid" style="margin-bottom:14px">
+      <div class="panel" style="margin:0;padding:12px"><canvas id="chartGastosTipo"></canvas></div>
+      <div class="panel" style="margin:0;padding:12px"><canvas id="chartGastosProveedor"></canvas></div>
+    </div>
+
+    <div id="tablaGastos"></div>
+  </div>
+</div>
+
+<div id="csv" class="tab">
+  <div class="panel">
+    <h2>Exportar stock</h2>
+    <div class="notice">La importación masiva la dejamos para la siguiente actualización para evitar duplicar pedidos durante esta migración.</div>
+    <button class="btn green" onclick="exportarCSV()">Exportar stock CSV</button>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://jgjvzqfxakvogaeqfual.supabase.co";
+const SUPABASE_KEY="sb_publishable_ylZfwhV3QQ98wG9qLiL7Jg_vTLaLByl";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const categorias=[
+"CAMISETAS","SHORES IMPORTADOS","CONJUNTOS","CAMPERAS","PERFUMES MASC",
+"PERFUMES FEM","VAPERS","STANLEY","JBL","COSMETICOS","ACCESORIOS","FUNDAS","OTROS"
+];
+
+let currentUser=null;
+let pedidos=[];
+let margenes={};
+let gastos=[];
+let shipments=[];
+let trackingEvents=[];
+let trackingFilter="ALL";
+let temporal=[];
+let chartTipo=null;
+let chartProveedor=null;
+let realtimeChannel=null;
+let categoriaActiva={minorista:"CAMISETAS",mayorista6:"CAMISETAS",mayorista12:"CAMISETAS",mayorista36:"CAMISETAS"};
+
+const money=n=>"$"+Math.round(Number(n)||0).toLocaleString("es-AR");
+const usd=n=>"USD "+Number(n||0).toFixed(2);
+const redondear500=n=>Math.ceil(Number(n||0)/500)*500;
+
+function esc(s){
+  return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+function toggleDrop(id){document.getElementById(id).classList.toggle("active")}
+function setToday(){document.getElementById("fechaPedido").value=new Date().toISOString().slice(0,10)}
+function cargarCategorias(){document.getElementById("categoriaNuevo").innerHTML=categorias.map(c=>`<option>${esc(c)}</option>`).join("")}
+
+
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isStandalone(){
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function urlBase64ToUint8Array(base64String){
+  const padding="=".repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+  const rawData=atob(base64);
+  return Uint8Array.from([...rawData].map(c=>c.charCodeAt(0)));
+}
+
+async function registrarServiceWorker(){
+  if(!("serviceWorker" in navigator))return null;
+  try{
+    return await navigator.serviceWorker.register("./sw.js",{scope:"./"});
+  }catch(e){
+    console.error("SW error",e);
+    return null;
+  }
+}
+
+async function actualizarEstadoPush(){
+  const btn=document.getElementById("pushBtn");
+  const notice=document.getElementById("pushNotice");
+  const text=document.getElementById("pushNoticeText");
+  if(!btn||!notice||!text)return;
+
+  if(!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)){
+    btn.textContent="🔕 No compatible";
+    btn.disabled=true;
+    notice.classList.remove("hidden");
+    text.textContent="Este navegador no admite Web Push.";
+    return;
+  }
+
+  if(isIOS() && !isStandalone()){
+    btn.textContent="🔔 Instalar app";
+    notice.classList.remove("hidden");
+    text.textContent="En iPhone: Compartir → Añadir a pantalla de inicio. Abrí IMPORTB2B desde el ícono y luego activá las notificaciones.";
+    return;
+  }
+
+  const reg=await navigator.serviceWorker.ready.catch(()=>null);
+  const sub=reg ? await reg.pushManager.getSubscription().catch(()=>null) : null;
+
+  if(Notification.permission==="granted" && sub){
+    btn.textContent="🔔 Activadas";
+    btn.classList.add("green");
+    notice.classList.add("hidden");
+  }else if(Notification.permission==="denied"){
+    btn.textContent="🔕 Bloqueadas";
+    notice.classList.remove("hidden");
+    text.textContent="Las notificaciones están bloqueadas para esta app. Debés habilitarlas desde los ajustes del dispositivo/navegador.";
+  }else{
+    btn.textContent="🔔 Activar";
+    btn.classList.remove("green");
+    notice.classList.remove("hidden");
+    text.textContent="Activá las notificaciones para recibir un aviso cuando un pedido quede PARA RETIRAR.";
+  }
+}
+
+async function activarNotificaciones(){
+  if(isIOS() && !isStandalone()){
+    alert("En iPhone primero agregá IMPORTB2B a la pantalla de inicio: Compartir → Añadir a pantalla de inicio. Después abrila desde ese ícono.");
+    return;
+  }
+
+  if(!currentUser){
+    alert("Primero iniciá sesión.");
+    return;
+  }
+
+  const reg=await registrarServiceWorker();
+  if(!reg){
+    alert("No se pudo iniciar el servicio de notificaciones.");
+    return;
+  }
+
+  const permission=await Notification.requestPermission();
+  if(permission!=="granted"){
+    await actualizarEstadoPush();
+    return;
+  }
+
+  const {data:cfg,error:cfgErr}=await sb.functions.invoke("importb2b-push-config");
+  if(cfgErr || !cfg?.publicKey){
+    alert("No se pudo obtener la configuración de notificaciones.");
+    return;
+  }
+
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub){
+    sub=await reg.pushManager.subscribe({
+      userVisibleOnly:true,
+      applicationServerKey:urlBase64ToUint8Array(cfg.publicKey)
+    });
+  }
+
+  const j=sub.toJSON();
+  const {error}=await sb.from("importb2b_push_subscriptions").upsert({
+    owner_id:currentUser.id,
+    endpoint:j.endpoint,
+    p256dh:j.keys?.p256dh,
+    auth:j.keys?.auth,
+    user_agent:navigator.userAgent,
+    active:true,
+    updated_at:new Date().toISOString()
+  },{onConflict:"owner_id,endpoint"});
+
+  if(error){
+    alert("No se pudo guardar este dispositivo: "+error.message);
+    return;
+  }
+
+  await actualizarEstadoPush();
+
+  const {data:test,error:testErr}=await sb.functions.invoke("importb2b-send-push",{
+    body:{
+      title:"✅ Notificaciones activadas",
+      body:"IMPORTB2B ya puede avisarte cuando un pedido esté para retirar.",
+      url:"./#seguimiento",
+      tag:"importb2b-test"
+    }
+  });
+
+  if(testErr || !test?.ok){
+    alert("La suscripción quedó guardada, pero la notificación de prueba no pudo enviarse.");
+  }
+}
+
+async function login(){
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  const status=document.getElementById("loginStatus");
+  if(!email||!password){status.textContent="Completá email y contraseña.";return}
+  status.textContent="Ingresando...";
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){status.textContent="Error: "+error.message;return}
+  currentUser=data.user;
+  await startApp();
+}
+
+async function logout(){
+  if(realtimeChannel){await sb.removeChannel(realtimeChannel);realtimeChannel=null}
+  await sb.auth.signOut();
+  currentUser=null;
+  pedidos=[];margenes={};gastos=[];shipments=[];trackingEvents=[];temporal=[];
+  document.getElementById("appView").classList.add("hidden");
+  document.getElementById("loginView").classList.remove("hidden");
+}
+
+async function startApp(){
+  document.getElementById("loginView").classList.add("hidden");
+  document.getElementById("appView").classList.remove("hidden");
+  document.getElementById("userEmail").textContent=currentUser.email||"";
+  setToday();
+  document.getElementById("gastoFecha").value=new Date().toISOString().slice(0,10);
+  cargarCategorias();
+  await registrarServiceWorker();
+  await cargarTodo();
+  renderShipmentOrderOptions();
+  activarRealtime();
+  await actualizarEstadoPush();
+}
+
+async function cargarTodo(){
+  await Promise.all([cargarPedidos(),cargarMargenes(),cargarGastos(),cargarTracking()]);
+  renderAll();
+}
+
+async function cargarPedidos(){
+  const {data:orders,error:oerr}=await sb.from("importb2b_orders")
+    .select("*").eq("owner_id",currentUser.id).order("order_number",{ascending:true});
+  if(oerr){alert("Error cargando pedidos: "+oerr.message);return}
+
+  const {data:items,error:ierr}=await sb.from("importb2b_order_items")
+    .select("*").eq("owner_id",currentUser.id).order("id",{ascending:true});
+  if(ierr){alert("Error cargando productos: "+ierr.message);return}
+
+  pedidos=(orders||[]).map(o=>({
+    dbId:o.id,
+    id:o.order_number,
+    fecha:o.order_date,
+    nota:o.note||"",
+    investmentUsd:Number(o.investment_usd||0),
+    merchandiseUsdt:o.merchandise_usdt==null?null:Number(o.merchandise_usdt),
+    shippingInputAmount:o.shipping_input_amount==null?null:Number(o.shipping_input_amount),
+    shippingInputCurrency:o.shipping_input_currency||null,
+    shippingUsdt:o.shipping_usdt==null?null:Number(o.shipping_usdt),
+    usdtRateArs:o.usdt_rate_ars==null?null:Number(o.usdt_rate_ars),
+    totalUnits:o.total_units==null?null:Number(o.total_units),
+    shippingUsdtPerUnit:o.shipping_usdt_per_unit==null?null:Number(o.shipping_usdt_per_unit),
+    productos:(items||[]).filter(i=>i.order_id===o.id).map(i=>({
+      dbId:i.id,
+      categoria:i.category,
+      producto:i.product,
+      detalle:i.detail||"",
+      cantidad:Number(i.quantity||0),
+      originalUsd:i.original_usd==null?null:Number(i.original_usd),
+      costoUsd:Number(i.cost_usd||0),
+      dolar:Number(i.dollar_rate||0),
+      costoArs:Number(i.cost_ars||0),
+      excludedFromStock:Boolean(i.excluded_from_stock)
+    }))
+  }));
+}
+
+async function cargarMargenes(){
+  const {data,error}=await sb.from("importb2b_margins")
+    .select("*").eq("owner_id",currentUser.id);
+  if(error){alert("Error cargando márgenes: "+error.message);return}
+  margenes={};
+  (data||[]).forEach(m=>{
+    margenes[m.category]={
+      dbId:m.id,minorista:Number(m.retail||0),mayorista6:Number(m.wholesale_6||0),
+      mayorista12:Number(m.wholesale_12||0),mayorista36:Number(m.wholesale_36||0)
+    };
+  });
+  categorias.forEach(c=>{
+    if(!margenes[c])margenes[c]={minorista:0,mayorista6:0,mayorista12:0,mayorista36:0};
+  });
+}
+
+
+
+async function cargarTracking(){
+  const {data:s,error:serr}=await sb.from("importb2b_shipments")
+    .select("*").eq("owner_id",currentUser.id).order("created_at",{ascending:false});
+  if(serr){alert("Error cargando seguimientos: "+serr.message);return}
+
+  const {data:e,error:eerr}=await sb.from("importb2b_tracking_events")
+    .select("*").eq("owner_id",currentUser.id).order("event_datetime",{ascending:false});
+  if(eerr){alert("Error cargando historial: "+eerr.message);return}
+
+  shipments=(s||[]).map(x=>({
+    id:x.id,
+    orderDbId:x.order_id,
+    carrier:x.carrier_name,
+    tracking:x.tracking_number,
+    provider:x.tracking_provider,
+    carrierCode:x.provider_carrier_code,
+    registered:Boolean(x.tracking_registered),
+    globalStatus:x.provider_global_status||"",
+    status:x.normalized_status||"NO_UPDATES",
+    latestDescription:x.latest_checkpoint_description||"",
+    latestLocation:x.latest_checkpoint_location||"",
+    latestAt:x.latest_checkpoint_at,
+    notifiedAt:x.ready_for_pickup_notified_at,
+    isReceived:Boolean(x.is_received),
+    receivedAt:x.received_at,
+    lastSyncAt:x.last_sync_at,
+    syncError:x.sync_error||""
+  }));
+
+  trackingEvents=(e||[]).map(x=>({
+    id:x.id,
+    shipmentId:x.shipment_id,
+    tracking:x.tracking_number,
+    description:x.description_original||"",
+    location:x.location_original||"",
+    at:x.event_datetime,
+    status:x.normalized_status||"NO_UPDATES"
+  }));
+}
+
+function orderForShipment(s){
+  return pedidos.find(p=>Number(p.dbId)===Number(s.orderDbId))||null;
+}
+
+function renderShipmentOrderOptions(){
+  const sel=document.getElementById("shipmentOrder");
+  if(!sel)return;
+  sel.innerHTML=pedidos.map(p=>`<option value="${p.dbId}">Pedido #${p.id} — ${esc(p.fecha)}</option>`).join("");
+}
+
+function statusInfo(status,syncError=""){
+  if(syncError)return {label:"INCIDENCIA",cls:"st-issue",icon:"🔴"};
+  const map={
+    READY_FOR_PICKUP:{label:"PARA RETIRAR",cls:"st-ready",icon:"🟢"},
+    RECEIVED:{label:"RETIRADO",cls:"st-received",icon:"✅"},
+    ARRIVED_AT_DISTRIBUTION_CENTER:{label:"CENTRO DE DISTRIBUCIÓN",cls:"st-center",icon:"🟠"},
+    IN_TRANSIT:{label:"EN VIAJE",cls:"st-transit",icon:"🔵"},
+    CARRIER_RECEIVED:{label:"INGRESÓ A VÍA CARGO",cls:"st-carrier",icon:"🟡"},
+    NO_UPDATES:{label:"SIN NOVEDADES",cls:"st-none",icon:"⚪"}
+  };
+  return map[status]||map.NO_UPDATES;
+}
+
+function fmtDateTime(v){
+  if(!v)return "Sin fecha";
+  try{return new Intl.DateTimeFormat("es-AR",{dateStyle:"short",timeStyle:"short"}).format(new Date(v))}catch{return String(v)}
+}
+
+async function crearShipment(){
+  const orderId=Number(document.getElementById("shipmentOrder").value);
+  const carrier=document.getElementById("shipmentCarrier").value;
+  const tracking=document.getElementById("shipmentTracking").value.trim();
+  if(!orderId||!tracking){alert("Seleccioná pedido y número de seguimiento.");return}
+
+  const {data,error}=await sb.from("importb2b_shipments").insert({
+    owner_id:currentUser.id,
+    order_id:orderId,
+    carrier_name:carrier,
+    tracking_number:tracking,
+    tracking_provider:"17TRACK",
+    normalized_status:"NO_UPDATES"
+  }).select("id").single();
+
+  if(error){alert("No se pudo crear el seguimiento: "+error.message);return}
+
+  const {data:fnData,error:fnError}=await sb.functions.invoke("seventeen-track-register",{
+    body:{shipment_id:data.id}
+  });
+
+  document.getElementById("shipmentTracking").value="";
+  document.getElementById("nuevoSeguimientoBox").classList.remove("active");
+
+  await cargarTracking();
+  renderAll();
+
+  if(fnError){
+    alert("El seguimiento se guardó, pero 17TRACK no pudo registrarlo todavía. Podés usar Reintentar registro.");
+    return;
+  }
+  if(fnData?.ok){
+    await refrescarShipment(data.id,true);
+    alert("Seguimiento registrado correctamente.");
+  }else{
+    alert("Seguimiento guardado. 17TRACK devolvió: "+(fnData?.error||"respuesta no confirmada"));
+  }
+}
+
+async function registrarShipment(id){
+  const {data,error}=await sb.functions.invoke("seventeen-track-register",{body:{shipment_id:id}});
+  await cargarTracking();renderAll();
+  if(error||!data?.ok)alert("No se pudo registrar: "+(data?.error||error?.message||"error"));
+  else alert("Tracking registrado en 17TRACK.");
+}
+
+async function refrescarShipment(id,silent=false){
+  const {data,error}=await sb.functions.invoke("seventeen-track-refresh",{body:{shipment_id:id}});
+  await Promise.all([cargarTracking(),cargarPedidos()]);
+  renderAll();
+  if(!silent){
+    if(error||!data?.ok)alert("No se pudo actualizar: "+(data?.error||error?.message||"error"));
+    else alert("Seguimiento actualizado.");
+  }
+}
+
+async function marcarRetirado(id){
+  if(!confirm("¿Marcar este envío como retirado?"))return;
+  const now=new Date().toISOString();
+  const {error}=await sb.from("importb2b_shipments").update({
+    is_received:true,
+    received_at:now,
+    normalized_status:"RECEIVED",
+    updated_at:now
+  }).eq("id",id);
+  if(error){alert(error.message);return}
+  await cargarTracking();renderAll();
+}
+
+async function eliminarShipment(id){
+  if(!confirm("¿Eliminar este seguimiento y su historial?"))return;
+  const {error:eerr}=await sb.from("importb2b_tracking_events").delete().eq("shipment_id",id);
+  if(eerr){alert(eerr.message);return}
+  const {error}=await sb.from("importb2b_shipments").delete().eq("id",id);
+  if(error){alert(error.message);return}
+  await cargarTracking();renderAll();
+}
+
+function setTrackingFilter(filter,btn=null){
+  trackingFilter=filter;
+  document.querySelectorAll(".filter-btn").forEach(b=>b.classList.toggle("active",b.dataset.filter===filter));
+  if(btn)btn.classList.add("active");
+  openMainTab("seguimiento");
+  renderShipments();
+}
+
+function shipmentPriority(s){
+  if(s.status==="READY_FOR_PICKUP")return 1;
+  if(s.syncError)return 2;
+  if(s.status==="ARRIVED_AT_DISTRIBUTION_CENTER")return 3;
+  if(s.status==="IN_TRANSIT")return 4;
+  if(s.status==="CARRIER_RECEIVED")return 5;
+  if(s.status==="NO_UPDATES")return 6;
+  if(s.status==="RECEIVED")return 7;
+  return 8;
+}
+
+function renderShipments(){
+  const q=(document.getElementById("buscarSeguimiento")?.value||"").toLowerCase().trim();
+
+  document.getElementById("shipCountTransit").textContent=shipments.filter(s=>s.status==="IN_TRANSIT").length;
+  document.getElementById("shipCountCenter").textContent=shipments.filter(s=>s.status==="ARRIVED_AT_DISTRIBUTION_CENTER").length;
+  document.getElementById("shipCountReady").textContent=shipments.filter(s=>s.status==="READY_FOR_PICKUP").length;
+  document.getElementById("shipCountReceived").textContent=shipments.filter(s=>s.status==="RECEIVED"||s.isReceived).length;
+
+  let data=[...shipments].sort((a,b)=>shipmentPriority(a)-shipmentPriority(b));
+
+  if(trackingFilter==="ISSUE")data=data.filter(s=>!!s.syncError);
+  else if(trackingFilter!=="ALL")data=data.filter(s=>s.status===trackingFilter);
+
+  data=data.filter(s=>{
+    const p=orderForShipment(s);
+    const text=`${s.tracking} ${s.carrier} ${s.status} ${s.latestDescription} ${s.latestLocation} ${s.latestAt||""} #${p?.id||""} ${p?.fecha||""}`;
+    return text.toLowerCase().includes(q);
+  });
+
+  const cont=document.getElementById("shipmentsList");
+  cont.innerHTML=data.map(s=>{
+    const p=orderForShipment(s);
+    const st=statusInfo(s.status,s.syncError);
+    const evs=trackingEvents.filter(e=>Number(e.shipmentId)===Number(s.id)).slice(0,12);
+    const cardClass=s.status==="READY_FOR_PICKUP"?"ready":(s.syncError?"issue":"");
+    return `
+      <div class="ship-card ${cardClass}">
+        <div class="ship-top">
+          <div>
+            <strong>${p?`Pedido #${p.id}`:"Pedido"}</strong>
+            <div class="ship-meta">${esc(s.carrier)} · Guía ${esc(s.tracking)}</div>
+          </div>
+          <span class="status-pill ${st.cls}">${st.icon} ${st.label}</span>
         </div>
-        <div>
-          <div class="sidebar-brand-name">IMPORTB2B</div>
-          <div class="sidebar-brand-sub">CONTROL FINANCIERO</div>
+
+        <div class="ship-meta">
+          ${s.latestDescription?`<strong style="color:#fff">${esc(s.latestDescription)}</strong><br>`:""}
+          ${s.latestLocation?`📍 ${esc(s.latestLocation)}<br>`:""}
+          ${s.latestAt?`${fmtDateTime(s.latestAt)}<br>`:""}
+          ${s.lastSyncAt?`Última sincronización: ${fmtDateTime(s.lastSyncAt)}`:""}
+          ${s.syncError?`<br><span style="color:#ff8e95">Error: ${esc(s.syncError)}</span>`:""}
         </div>
-      </div>
 
-      <nav class="side-nav">
-        <button class="nav-item is-active" data-view="dashboard"><span class="nav-icon"></span><span>Dashboard</span></button>
-        <button class="nav-item" data-view="movements"><span class="nav-icon"></span><span>Movimientos</span></button>
-        <button class="nav-item" data-view="usdt"><span class="nav-icon"></span><span>USDT / ARS</span></button>
-        <button class="nav-item" data-view="settlements"><span class="nav-icon"></span><span>Dinero a liquidar</span></button>
-        <button class="nav-item" data-view="receivables"><span class="nav-icon"></span><span>Dinero a cobrar</span></button>
-        <button class="nav-item" data-view="audit"><span class="nav-icon"></span><span>Auditoría</span></button>
-      </nav>
+        <div class="actions">
+          ${!s.registered?`<button class="btn gold small" onclick="registrarShipment(${s.id})">Reintentar registro</button>`:""}
+          ${s.status!=="RECEIVED"?`<button class="btn dark small" onclick="refrescarShipment(${s.id})">↻ Actualizar ahora</button>`:""}
+          ${s.status==="READY_FOR_PICKUP"&&!s.isReceived?`<button class="btn green small" onclick="marcarRetirado(${s.id})">Marcar como retirado</button>`:""}
+          <button class="btn dark small" onclick="toggleTrackingHistory(${s.id})">Ver historial</button>
+          <button class="btn danger small" onclick="eliminarShipment(${s.id})">Eliminar</button>
+        </div>
 
-      <div class="sidebar-bottom">
-        <div class="user-block">
-          <div class="avatar" id="userInitial">U</div>
-          <div class="user-copy">
-            <strong id="userName">Usuario</strong>
-            <span id="userEmail">—</span>
+        <div id="hist_${s.id}" class="hidden">
+          <div class="timeline">
+            ${evs.length?evs.map(e=>`
+              <div class="event">
+                <strong>${esc(e.description||statusInfo(e.status).label)}</strong>
+                <small>${e.location?`${esc(e.location)}<br>`:""}${fmtDateTime(e.at)}</small>
+              </div>`).join(""):'<div class="empty">Todavía no hay movimientos guardados.</div>'}
           </div>
         </div>
-        <button id="logoutBtn" class="btn btn-ghost btn-block">CERRAR SESIÓN</button>
-      </div>
-    </aside>
+      </div>`;
+  }).join("");
 
-    <main class="main">
-      <header class="topbar">
-        <div>
-          <div class="eyebrow" id="pageEyebrow">IMPORTB2B · CAJA</div>
-          <h2 id="pageTitle">DASHBOARD</h2>
-        </div>
-        <div class="topbar-actions">
-          <div id="connectionPill" class="status-pill"><span class="dot"></span><span>Conectando</span></div>
-          <button id="refreshAllBtn" class="icon-btn" title="Actualizar">↻</button>
-          <button id="newMovementTopBtn" class="btn btn-primary">+ NUEVO MOVIMIENTO</button>
-        </div>
-      </header>
+  if(!data.length)cont.innerHTML='<div class="empty">No hay seguimientos para este filtro.</div>';
+}
 
-      <!-- DASHBOARD -->
-      <section id="view-dashboard" class="page-view">
-        <div class="hero-grid">
-          <article class="panel balance-panel">
-            <div class="panel-label">SALDO DISPONIBLE ESTIMADO</div>
-            <div class="balance-main" id="totalBalanceArs">$ 0</div>
-            <div class="balance-note">Transferencias + efectivo + USDT valorizado a cotización de venta.</div>
-            <div class="accent-line"></div>
+function toggleTrackingHistory(id){
+  document.getElementById("hist_"+id)?.classList.toggle("hidden");
+}
 
-            <div class="wallet-grid">
-              <button id="transferBreakdownToggle" class="wallet wallet-action" type="button" aria-expanded="false">
-                <span>TRANSFERENCIAS · VER DESGLOSE</span>
-                <strong id="transferBalance">$ 0</strong>
-              </button>
-              <button id="cashBreakdownToggle" class="wallet wallet-action" type="button" aria-expanded="false">
-                <span>EFECTIVO · VER DESGLOSE</span>
-                <strong id="cashBalance">$ 0</strong>
-              </button>
-              <button id="usdtBreakdownToggle" class="wallet wallet-action" type="button" aria-expanded="false">
-                <span>USDT · VER DESGLOSE</span>
-                <strong id="usdtBalance">0,00 USDT</strong>
-              </button>
-            </div>
+function renderOrderShipmentBadges(order){
+  const ss=shipments.filter(s=>Number(s.orderDbId)===Number(order.dbId));
+  if(!ss.length)return '<div class="track-inline">Sin seguimiento</div>';
+  return `<div class="order-ships">${ss.map(s=>{
+    const st=statusInfo(s.status,s.syncError);
+    return `<span class="status-pill ${st.cls}" onclick="event.stopPropagation();openMainTab('seguimiento')">${st.icon} ${st.label}</span>`;
+  }).join("")}</div>`;
+}
 
-            <div id="transferBreakdown" class="cash-breakdown is-hidden">
-              <div><span>NAHUEL</span><strong id="transferNahuel">$ 0</strong></div>
-              <div><span>ESTEBAN</span><strong id="transferEsteban">$ 0</strong></div>
-              <div id="transferUnassignedWrap" class="is-hidden"><span>SIN ASIGNAR</span><strong id="transferUnassigned">$ 0</strong></div>
-            </div>
+async function cargarGastos(){
+  const {data,error}=await sb.from("importb2b_expenses")
+    .select("*").eq("owner_id",currentUser.id)
+    .order("expense_date",{ascending:false})
+    .order("id",{ascending:false});
+  if(error){alert("Error cargando gastos: "+error.message);return}
+  gastos=(data||[]).map(g=>({
+    id:g.id,
+    fecha:g.expense_date,
+    tipo:g.expense_type,
+    proveedor:g.provider||"",
+    descripcion:g.description||"",
+    montoArs:Number(g.amount_ars||0),
+    montoUsd:g.amount_usd==null?null:Number(g.amount_usd),
+    dolar:g.dollar_rate==null?null:Number(g.dollar_rate)
+  }));
+}
 
-            <div id="cashBreakdown" class="cash-breakdown is-hidden">
-              <div><span>NAHUEL</span><strong id="cashNahuel">$ 0</strong></div>
-              <div><span>ESTEBAN</span><strong id="cashEsteban">$ 0</strong></div>
-              <div id="cashUnassignedWrap" class="is-hidden"><span>SIN ASIGNAR</span><strong id="cashUnassigned">$ 0</strong></div>
-            </div>
+async function guardarGasto(){
+  const fecha=document.getElementById("gastoFecha").value;
+  const tipo=document.getElementById("gastoTipo").value;
+  const proveedor=document.getElementById("gastoProveedor").value.trim();
+  const descripcion=document.getElementById("gastoDescripcion").value.trim();
+  const montoArs=Number(document.getElementById("gastoArs").value||0);
+  const usdRaw=document.getElementById("gastoUsd").value;
+  const dolarRaw=document.getElementById("gastoDolar").value;
 
-            <div id="usdtBreakdown" class="cash-breakdown usdt-breakdown is-hidden">
-              <div><span>NAHUEL</span><strong id="usdtNahuel">0,00 USDT</strong><small id="usdtNahuelArs">≈ $ 0</small></div>
-              <div><span>ESTEBAN</span><strong id="usdtEsteban">0,00 USDT</strong><small id="usdtEstebanArs">≈ $ 0</small></div>
-              <div id="usdtUnassignedWrap" class="is-hidden"><span>SIN ASIGNAR</span><strong id="usdtUnassigned">0,00 USDT</strong><small id="usdtUnassignedArs">≈ $ 0</small></div>
-            </div>
-          </article>
+  if(!fecha || !(montoArs>0 || Number(usdRaw)>0)){
+    alert("Completá la fecha y al menos un monto.");
+    return;
+  }
 
-          <article class="panel quote-panel">
-            <div class="panel-head">
-              <div>
-                <div class="panel-label">BINANCE P2P · USDT / ARS</div>
-                <h3>COTIZACIÓN</h3>
-              </div>
-              <div id="quoteSourceBadge" class="source-badge">CARGANDO</div>
-            </div>
+  const {error}=await sb.from("importb2b_expenses").insert({
+    owner_id:currentUser.id,
+    expense_date:fecha,
+    expense_type:tipo,
+    provider:proveedor||null,
+    description:descripcion||null,
+    amount_ars:montoArs,
+    amount_usd:usdRaw===""?null:Number(usdRaw),
+    dollar_rate:dolarRaw===""?null:Number(dolarRaw)
+  });
 
-            <div class="quote-grid">
-              <div class="quote quote-buy">
-                <span>COMPRA USDT</span>
-                <strong id="buyQuote">$ —</strong>
-                <small>Pagás ARS → recibís USDT</small>
-              </div>
-              <div class="quote quote-sell">
-                <span>VENTA USDT</span>
-                <strong id="sellQuote">$ —</strong>
-                <small>Entregás USDT → recibís ARS</small>
-              </div>
-            </div>
+  if(error){alert("No se pudo guardar el gasto: "+error.message);return}
 
-            <div class="quote-meta">
-              <span id="quoteUpdated">Sin actualizar</span>
-              <div class="inline-actions">
-                <button class="text-btn" data-go="usdt">VER DETALLE</button>
-                <button id="refreshQuoteBtn" class="text-btn">ACTUALIZAR ↻</button>
-              </div>
-            </div>
-          </article>
-        </div>
+  document.getElementById("gastoProveedor").value="";
+  document.getElementById("gastoDescripcion").value="";
+  document.getElementById("gastoArs").value="";
+  document.getElementById("gastoUsd").value="";
+  document.getElementById("gastoDolar").value="";
 
-        <div class="stats-grid">
-          <article class="stat-card">
-            <span>INGRESOS DEL MES</span>
-            <strong class="positive" id="monthIncome">+$ 0</strong>
-            <small id="monthIncomeCount">0 movimientos</small>
-          </article>
-          <article class="stat-card">
-            <span>EGRESOS DEL MES</span>
-            <strong class="negative" id="monthExpense">-$ 0</strong>
-            <small id="monthExpenseCount">0 movimientos</small>
-          </article>
-          <article class="stat-card stat-card--result">
-            <span>RESULTADO DEL MES</span>
-            <strong id="monthResult">$ 0</strong>
-            <small>Ingresos menos egresos</small>
-          </article>
-        </div>
+  await cargarGastos();
+  document.getElementById("nuevoGastoBox").classList.remove("active");
+  renderAll();
+}
 
-        <div class="pending-grid">
-          <button class="pending-card" type="button" data-go="settlements">
-            <div>
-              <span>DINERO A LIQUIDAR</span>
-              <strong id="pendingSettlementAmount">$ 0</strong>
-              <small id="pendingSettlementCount">0 operaciones pendientes</small>
-            </div>
-            <span class="pending-arrow">→</span>
-          </button>
-          <button class="pending-card" type="button" data-go="receivables">
-            <div>
-              <span>DINERO A COBRAR</span>
-              <strong id="pendingReceivableAmount">$ 0</strong>
-              <small id="pendingReceivableCount">0 clientes con saldo</small>
-            </div>
-            <span class="pending-arrow">→</span>
-          </button>
-        </div>
+async function editarGasto(id){
+  const fecha=document.getElementById("gfecha_"+id).value;
+  const tipo=document.getElementById("gtipo_"+id).value;
+  const proveedor=document.getElementById("gprov_"+id).value.trim();
+  const descripcion=document.getElementById("gdesc_"+id).value.trim();
+  const montoArs=Number(document.getElementById("gars_"+id).value||0);
+  const usdRaw=document.getElementById("gusd_"+id).value;
+  const dolarRaw=document.getElementById("gdolar_"+id).value;
 
-        <article class="panel section-panel">
-          <div class="panel-head">
-            <div><div class="panel-label">ACTIVIDAD</div><h3>ÚLTIMOS MOVIMIENTOS</h3></div>
-            <button class="text-btn" data-go="movements">VER TODOS →</button>
-          </div>
-          <div id="recentMovements" class="movement-list"></div>
-        </article>
-      </section>
+  const {error}=await sb.from("importb2b_expenses").update({
+    expense_date:fecha,
+    expense_type:tipo,
+    provider:proveedor||null,
+    description:descripcion||null,
+    amount_ars:montoArs,
+    amount_usd:usdRaw===""?null:Number(usdRaw),
+    dollar_rate:dolarRaw===""?null:Number(dolarRaw),
+    updated_at:new Date().toISOString()
+  }).eq("id",id);
 
-      <!-- MOVEMENTS -->
-      <section id="view-movements" class="page-view is-hidden">
-        <article class="panel section-panel">
-          <div class="panel-head panel-head--wrap">
-            <div><div class="panel-label">CAJA</div><h3>MOVIMIENTOS</h3></div>
-            <div class="header-actions">
-              <button id="newInternalTransferBtn" class="btn btn-ghost" type="button">↔ TRANSFERENCIA INTERNA</button>
-              <button class="btn btn-ghost" data-go="audit" type="button">AUDITORÍA</button>
-              <button id="newMovementViewBtn" class="btn btn-primary" type="button">+ NUEVO</button>
-            </div>
-          </div>
-          <div class="filters filters--spaced">
-            <select id="filterKind">
-              <option value="">TODOS</option>
-              <option value="income">INGRESOS</option>
-              <option value="expense">EGRESOS</option>
+  if(error){alert(error.message);return}
+  await cargarGastos();renderAll();
+}
+
+async function eliminarGasto(id){
+  if(!confirm("¿Eliminar este gasto?"))return;
+  const {error}=await sb.from("importb2b_expenses").delete().eq("id",id);
+  if(error){alert(error.message);return}
+  await cargarGastos();renderAll();
+}
+
+function renderGastos(){
+  const q=(document.getElementById("buscarGastos")?.value||"").toLowerCase().trim();
+  const data=gastos.filter(g=>
+    `${g.fecha} ${g.tipo} ${g.proveedor} ${g.descripcion}`.toLowerCase().includes(q)
+  );
+
+  const totalArs=gastos.reduce((a,g)=>a+g.montoArs,0);
+  const totalUsd=gastos.reduce((a,g)=>a+(g.montoUsd||0),0);
+
+  document.getElementById("totalGastos").textContent=money(totalArs);
+  document.getElementById("gastosTotalArs").textContent=money(totalArs);
+  document.getElementById("gastosTotalUsd").textContent=usd(totalUsd);
+  document.getElementById("gastosCantidad").textContent=gastos.length;
+
+  document.getElementById("tablaGastos").innerHTML=`
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Fecha</th><th>Tipo</th><th>Proveedor</th><th>Descripción</th>
+        <th>ARS</th><th>USD</th><th>Dólar</th><th>Acción</th>
+      </tr></thead>
+      <tbody>${data.map(g=>`
+        <tr>
+          <td><input id="gfecha_${g.id}" type="date" value="${esc(g.fecha)}"></td>
+          <td>
+            <select id="gtipo_${g.id}">
+              ${["Materia prima","Envío","Impuesto","Logística","Proveedor","Servicio","Comisión","Publicidad","Otro"]
+                .map(t=>`<option ${g.tipo===t?"selected":""}>${t}</option>`).join("")}
             </select>
-            <select id="filterMethod">
-              <option value="">TODOS LOS MEDIOS</option>
-              <option value="transferencia">TRANSFERENCIA</option>
-              <option value="efectivo">EFECTIVO</option>
-              <option value="usdt">USDT</option>
-            </select>
-            <input id="filterSearch" type="search" placeholder="Buscar movimiento...">
+          </td>
+          <td><input id="gprov_${g.id}" value="${esc(g.proveedor)}"></td>
+          <td><input id="gdesc_${g.id}" value="${esc(g.descripcion)}"></td>
+          <td><input id="gars_${g.id}" type="number" step="0.01" value="${g.montoArs}"></td>
+          <td><input id="gusd_${g.id}" type="number" step="0.01" value="${g.montoUsd??""}"></td>
+          <td><input id="gdolar_${g.id}" type="number" step="0.01" value="${g.dolar??""}"></td>
+          <td>
+            <button class="btn green small" onclick="editarGasto(${g.id})">Guardar</button>
+            <button class="btn danger small" onclick="eliminarGasto(${g.id})">Eliminar</button>
+          </td>
+        </tr>`).join("")}
+      </tbody>
+    </table></div>
+    ${data.length?"":'<div class="empty">No se encontraron gastos.</div>'}`;
+
+  renderGraficosGastos();
+}
+
+function renderGraficosGastos(){
+  if(!window.Chart)return;
+
+  const porTipo={};
+  const porProveedor={};
+
+  gastos.forEach(g=>{
+    porTipo[g.tipo]=(porTipo[g.tipo]||0)+g.montoArs;
+    const p=g.proveedor||"Sin proveedor";
+    porProveedor[p]=(porProveedor[p]||0)+g.montoArs;
+  });
+
+  const topProv=Object.entries(porProveedor).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  if(chartTipo)chartTipo.destroy();
+  if(chartProveedor)chartProveedor.destroy();
+
+  chartTipo=new Chart(document.getElementById("chartGastosTipo"),{
+    type:"doughnut",
+    data:{labels:Object.keys(porTipo),datasets:[{data:Object.values(porTipo)}]},
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:"#fff"}}}
+    }
+  });
+
+  chartProveedor=new Chart(document.getElementById("chartGastosProveedor"),{
+    type:"bar",
+    data:{labels:topProv.map(x=>x[0]),datasets:[{label:"ARS",data:topProv.map(x=>x[1])}]},
+    options:{
+      responsive:true,
+      scales:{
+        x:{ticks:{color:"#fff"}},
+        y:{ticks:{color:"#fff"}}
+      },
+      plugins:{legend:{labels:{color:"#fff"}}}
+    }
+  });
+}
+
+function renderMargenes(){
+  document.getElementById("tablaMargenes").innerHTML=categorias.map(c=>`
+    <tr>
+      <td>${esc(c)}</td>
+      <td><input type="number" data-cat="${esc(c)}" data-field="minorista" value="${margenes[c]?.minorista??0}"></td>
+      <td><input type="number" data-cat="${esc(c)}" data-field="mayorista6" value="${margenes[c]?.mayorista6??0}"></td>
+      <td><input type="number" data-cat="${esc(c)}" data-field="mayorista12" value="${margenes[c]?.mayorista12??0}"></td>
+      <td><input type="number" data-cat="${esc(c)}" data-field="mayorista36" value="${margenes[c]?.mayorista36??0}"></td>
+    </tr>`).join("");
+}
+
+async function guardarMargenes(){
+  const inputs=[...document.querySelectorAll("#tablaMargenes input")];
+  const draft={};
+  inputs.forEach(inp=>{
+    const c=inp.dataset.cat,f=inp.dataset.field;
+    if(!draft[c])draft[c]={...margenes[c]};
+    draft[c][f]=Number(inp.value||0);
+  });
+
+  for(const c of categorias){
+    const m=draft[c]||margenes[c];
+    const row={
+      owner_id:currentUser.id,category:c,retail:m.minorista,wholesale_6:m.mayorista6,
+      wholesale_12:m.mayorista12,wholesale_36:m.mayorista36,updated_at:new Date().toISOString()
+    };
+    if(margenes[c]?.dbId){
+      const {error}=await sb.from("importb2b_margins").update(row).eq("id",margenes[c].dbId);
+      if(error){alert("Error guardando "+c+": "+error.message);return}
+    }else{
+      const {error}=await sb.from("importb2b_margins").insert(row);
+      if(error){alert("Error guardando "+c+": "+error.message);return}
+    }
+  }
+  await cargarMargenes();
+  document.getElementById("margenesBox").classList.remove("active");
+  renderAll();
+}
+
+function agregarTemporal(){
+  const categoria=document.getElementById("categoriaNuevo").value;
+  const producto=document.getElementById("productoNuevo").value.trim();
+  const detalle=document.getElementById("detalleNuevo").value.trim()||"Sin detalle";
+  const costoUsd=Number(document.getElementById("costoUsdNuevo").value);
+  const originalRaw=document.getElementById("originalUsdNuevo").value;
+  const originalUsd=originalRaw===""?null:Number(originalRaw);
+  const dolar=Number(document.getElementById("dolarNuevo").value);
+  const cantidad=Number(document.getElementById("cantidadNuevo").value);
+
+  if(!producto||!(costoUsd>=0)||!(dolar>0)||!(cantidad>0)){alert("Completá producto, costo USD, dólar y cantidad.");return}
+  temporal.push({categoria,producto,detalle,cantidad,originalUsd,costoUsd,dolar,costoArs:costoUsd*dolar});
+  document.getElementById("productoNuevo").value="";
+  document.getElementById("detalleNuevo").value="";
+  document.getElementById("costoUsdNuevo").value="";
+  document.getElementById("originalUsdNuevo").value="";
+  document.getElementById("cantidadNuevo").value=1;
+  renderTemporal();
+}
+
+function calcularResumenTemporal(){
+  const rate=Number(document.getElementById("dolarNuevo")?.value||0);
+  const shippingInput=Number(document.getElementById("envioNuevo")?.value||0);
+  const shippingCurrency=document.getElementById("monedaEnvioNuevo")?.value||"USDT";
+  const units=temporal.reduce((a,i)=>a+Number(i.cantidad||0),0);
+  const merchandise=temporal.reduce((a,i)=>a+Number(i.costoUsd||0)*Number(i.cantidad||0),0);
+  const shippingUsdt=shippingCurrency==="ARS" ? (rate>0?shippingInput/rate:0) : shippingInput;
+  const shippingPerUnit=units>0?shippingUsdt/units:0;
+  const investment=merchandise+shippingUsdt;
+  const investmentArs=rate>0?investment*rate:0;
+  return {rate,shippingInput,shippingCurrency,units,merchandise,shippingUsdt,shippingPerUnit,investment,investmentArs};
+}
+function actualizarResumenTemporal(){renderTemporal();}
+function renderTemporal(){
+  const div=document.getElementById("pedidoTemporal");
+  const r=calcularResumenTemporal();
+  if(!temporal.length){div.innerHTML=`<div class="empty">No hay productos cargados.</div><div class="cards" style="margin-top:10px"><div class="card"><span class="label">Unidades</span><strong>0</strong></div><div class="card"><span class="label">Mercadería</span><strong>USD 0.00</strong></div><div class="card"><span class="label">Envío USDT</span><strong>${usd(r.shippingUsdt)}</strong></div><div class="card green"><span class="label">Inversión total</span><strong>${usd(r.investment)}</strong></div></div>`;return;}
+  div.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Producto</th><th>Detalle</th><th>Cant.</th><th>Proveedor USD/u.</th><th>Envío/u.</th><th>Costo real USD/u.</th><th>Costo real ARS/u.</th><th></th></tr></thead><tbody>${temporal.map((i,x)=>{const realUsd=Number(i.costoUsd||0)+r.shippingPerUnit;const realArs=realUsd*r.rate;return `<tr><td>${esc(i.categoria)}</td><td>${esc(i.producto)}</td><td>${esc(i.detalle)}</td><td>${i.cantidad}</td><td>${usd(i.costoUsd)}</td><td>${usd(r.shippingPerUnit)}</td><td><strong>${usd(realUsd)}</strong></td><td><strong>${money(realArs)}</strong></td><td><button class="btn danger small" onclick="temporal.splice(${x},1);renderTemporal()">Eliminar</button></td></tr>`;}).join("")}</tbody></table></div><div class="cards" style="margin-top:10px"><div class="card"><span class="label">Unidades compradas</span><strong>${r.units}</strong></div><div class="card"><span class="label">Mercadería</span><strong>${usd(r.merchandise)}</strong></div><div class="card"><span class="label">Envío USDT</span><strong>${usd(r.shippingUsdt)}</strong></div><div class="card"><span class="label">Envío por unidad</span><strong>${usd(r.shippingPerUnit)}</strong></div><div class="card green"><span class="label">Inversión total</span><strong>${usd(r.investment)}</strong></div><div class="card"><span class="label">Cotización USDT</span><strong>${money(r.rate)}</strong></div><div class="card"><span class="label">Total equivalente ARS</span><strong>${money(r.investmentArs)}</strong></div></div>`;
+}
+
+async function finalizarPedido(){
+  if(!temporal.length){alert("Cargá al menos un producto.");return}
+  const fecha=document.getElementById("fechaPedido").value;
+  if(!fecha){alert("Seleccioná la fecha.");return}
+  const r=calcularResumenTemporal();
+  if(!(r.rate>0)){alert("Ingresá una cotización USDT válida.");return}
+  const nextNumber=pedidos.length?Math.max(...pedidos.map(p=>p.id))+1:1;
+  const {data:order,error:oerr}=await sb.from("importb2b_orders").insert({owner_id:currentUser.id,order_number:nextNumber,order_date:fecha,investment_usd:r.investment,merchandise_usdt:r.merchandise,shipping_input_amount:r.shippingInput,shipping_input_currency:r.shippingCurrency,shipping_usdt:r.shippingUsdt,usdt_rate_ars:r.rate,total_units:r.units,shipping_usdt_per_unit:r.shippingPerUnit}).select("id").single();
+  if(oerr){alert("No se pudo crear el pedido: "+oerr.message);return}
+  const rows=temporal.map(i=>{const supplierUsd=Number(i.costoUsd||0);const landedUsd=supplierUsd+r.shippingPerUnit;return {owner_id:currentUser.id,order_id:order.id,category:i.categoria,product:i.producto,detail:i.detalle,quantity:i.cantidad,original_usd:supplierUsd,cost_usd:landedUsd,dollar_rate:r.rate,cost_ars:landedUsd*r.rate,excluded_from_stock:false};});
+  const {error:ierr}=await sb.from("importb2b_order_items").insert(rows);
+  if(ierr){await sb.from("importb2b_orders").delete().eq("id",order.id);alert("No se pudieron guardar los productos: "+ierr.message);return}
+  temporal=[];document.getElementById("envioNuevo").value="0";document.getElementById("monedaEnvioNuevo").value="USDT";await cargarPedidos();renderAll();document.getElementById("nuevoPedidoBox").classList.remove("active");alert(`Pedido #${nextNumber} guardado. ${r.units} unidades · ${usd(r.investment)} invertidos.`);
+}
+
+function productosStock(){
+  const stock=[];
+  pedidos.forEach(p=>p.productos.forEach(i=>{
+    if(!i.excludedFromStock && i.cantidad>0)stock.push({...i,pedido:p.id,fecha:p.fecha});
+  }));
+  return stock;
+}
+
+function stockAgrupado(){
+  const g={};
+  productosStock().forEach(i=>{
+    const key=`${i.categoria}|${i.producto}|${i.detalle}`;
+    if(!g[key])g[key]={categoria:i.categoria,producto:i.producto,detalle:i.detalle,cantidad:0,totalUsd:0,totalArs:0,compras:[]};
+    g[key].cantidad+=i.cantidad;
+    g[key].totalUsd+=i.costoUsd*i.cantidad;
+    g[key].totalArs+=i.costoArs*i.cantidad;
+    g[key].compras.push(i);
+  });
+  return Object.values(g).map(i=>({
+    ...i,costoPromedioUsd:i.cantidad?i.totalUsd/i.cantidad:0,costoPromedioArs:i.cantidad?i.totalArs/i.cantidad:0
+  }));
+}
+
+function renderResumen(){
+  const s=stockAgrupado();
+  const totalCant=s.reduce((a,i)=>a+i.cantidad,0);
+  const totalUsd=pedidos.reduce((a,p)=>a+Number(p.investmentUsd||0),0);
+  const totalArs=s.reduce((a,i)=>a+i.totalArs,0);
+  const venta=s.reduce((a,i)=>{
+    const m=margenes[i.categoria]?.minorista||0;
+    return a+redondear500(i.costoPromedioArs*(1+m/100))*i.cantidad;
+  },0);
+  document.getElementById("stockTotal").textContent=totalCant;
+  document.getElementById("totalUsd").textContent=usd(totalUsd);
+  document.getElementById("totalArs").textContent=money(totalArs);
+  document.getElementById("gananciaMinorista").textContent=money(venta-totalArs);
+  document.getElementById("totalGastos").textContent=money(gastos.reduce((a,g)=>a+g.montoArs,0));
+}
+
+function renderPedidos(){
+  const div=document.getElementById("listaPedidos");
+  const q=document.getElementById("buscarPedidos").value.toLowerCase().trim();
+  div.innerHTML="";
+  pedidos.forEach(p=>{
+    const text=(`#${p.id} ${p.fecha} ${p.nota} ${JSON.stringify(p.productos)}`).toLowerCase();
+    if(q&&!text.includes(q))return;
+    const totalArs=p.productos.reduce((a,i)=>a+i.costoArs*i.cantidad,0);
+    const units=p.totalUnits??p.productos.reduce((a,i)=>a+i.cantidad,0);
+    const hasShippingData=p.shippingUsdt!=null || p.merchandiseUsdt!=null;
+
+    div.innerHTML+=`
+      <div class="order" data-id="${p.id}">
+        <div class="order-head" onclick="togglePedido(${p.id})">
+          <div class="order-title"><strong>Pedido #${p.id}</strong> — ${esc(p.fecha)}
+            ${p.nota?`<br><small>${esc(p.nota)}</small>`:""}
+            ${renderOrderShipmentBadges(p)}
           </div>
-          <div id="allMovements" class="movement-list movement-list--table"></div>
-        </article>
-      </section>
-
-      <!-- USDT -->
-      <section id="view-usdt" class="page-view is-hidden">
-        <div class="usdt-layout">
-          <article class="panel quote-panel quote-panel--large">
-            <div class="panel-label">REFERENCIA BINANCE P2P</div>
-            <h3>USDT / ARS</h3>
-            <div class="quote-grid quote-grid--large">
-              <div class="quote quote-buy"><span>COMPRA</span><strong id="buyQuoteLarge">$ —</strong><small>Comprar USDT pagando ARS.</small></div>
-              <div class="quote quote-sell"><span>VENTA</span><strong id="sellQuoteLarge">$ —</strong><small>Vender USDT y recibir ARS.</small></div>
-            </div>
-            <div class="quote-meta"><span id="quoteUpdatedLarge">Sin actualizar</span><button id="refreshQuoteBtnLarge" class="btn btn-outline">ACTUALIZAR BINANCE</button></div>
-          </article>
-
-          <article class="panel manual-panel">
-            <div class="panel-label">RESPALDO</div>
-            <h3>COTIZACIÓN MANUAL</h3>
-            <p class="muted">Solo si Binance no responde o necesitás fijar una referencia excepcional.</p>
-            <form id="manualQuoteForm" class="form-stack compact">
-              <label><span>Compra</span><input id="manualBuy" type="number" step="0.01" min="0" placeholder="1585.00"></label>
-              <label><span>Venta</span><input id="manualSell" type="number" step="0.01" min="0" placeholder="1579.00"></label>
-              <button class="btn btn-primary" type="submit">USAR COTIZACIÓN MANUAL</button>
-            </form>
-          </article>
+          <div class="order-badges"><span class="badge">${units} un.</span><span class="badge">${usd(p.investmentUsd)}</span><span class="badge">${money(totalArs)}</span></div>
         </div>
-
-        <article class="panel section-panel">
-          <div class="panel-head"><div><div class="panel-label">FUNCIONAMIENTO</div><h3>REFERENCIA Y REGISTRO</h3></div></div>
-          <div class="criteria-grid">
-            <div><strong>01</strong><span>Consulta BUY y SELL de USDT/ARS en Binance P2P.</span></div>
-            <div><strong>02</strong><span>La app conserva una última cotización guardada como respaldo.</span></div>
-            <div><strong>03</strong><span>Los movimientos USDT congelan la cotización utilizada.</span></div>
-            <div><strong>04</strong><span>Los snapshots se guardan solo cuando corresponde, evitando duplicados innecesarios.</span></div>
+        <div class="order-body">
+          ${hasShippingData?`<div class="cards" style="margin-bottom:12px"><div class="card"><span class="label">Unidades</span><strong>${units}</strong></div><div class="card"><span class="label">Mercadería</span><strong>${usd(p.merchandiseUsdt||0)}</strong></div><div class="card"><span class="label">Envío</span><strong>${usd(p.shippingUsdt||0)}</strong></div><div class="card"><span class="label">Envío/u.</span><strong>${usd(p.shippingUsdtPerUnit||0)}</strong></div><div class="card green"><span class="label">Inversión total</span><strong>${usd(p.investmentUsd)}</strong></div><div class="card"><span class="label">Cotización USDT</span><strong>${p.usdtRateArs?money(p.usdtRateArs):"—"}</strong></div></div>`:""}
+          <div class="actions">
+            <button class="btn green small" onclick="event.stopPropagation();prepararSeguimientoPedido(${p.dbId})">+ Agregar seguimiento</button>
+            <button class="btn danger small" onclick="event.stopPropagation();eliminarPedido(${p.dbId})">Eliminar pedido completo</button>
           </div>
-        </article>
-      </section>
-
-      <!-- SETTLEMENTS -->
-      <section id="view-settlements" class="page-view is-hidden">
-        <div class="module-summary-grid">
-          <article class="panel module-summary-card">
-            <span>PENDIENTE DE ACREDITACIÓN</span>
-            <strong id="settlementsTotal">$ 0</strong>
-            <small id="settlementsCount">0 operaciones</small>
-          </article>
-          <article class="panel module-summary-card module-summary-card--muted">
-            <span>CONCEPTO</span>
-            <strong>GO CUOTAS / TARJETAS</strong>
-            <small>No se suma al saldo disponible hasta liquidarse.</small>
-          </article>
-        </div>
-
-        <article class="panel section-panel">
-          <div class="panel-head panel-head--wrap">
-            <div><div class="panel-label">PENDIENTES</div><h3>DINERO A LIQUIDAR</h3></div>
-            <button id="newSettlementBtn" class="btn btn-primary" type="button">+ NUEVA LIQUIDACIÓN</button>
-          </div>
-          <div id="settlementList" class="finance-list"></div>
-        </article>
-      </section>
-
-      <!-- RECEIVABLES -->
-      <section id="view-receivables" class="page-view is-hidden">
-        <div class="module-summary-grid">
-          <article class="panel module-summary-card">
-            <span>TOTAL A COBRAR</span>
-            <strong id="receivablesTotal">$ 0</strong>
-            <small id="receivablesCount">0 clientes con saldo</small>
-          </article>
-          <article class="panel module-summary-card module-summary-card--muted">
-            <span>CONTROL</span>
-            <strong>DEUDORES</strong>
-            <small>Los cobros pasan a caja recién cuando se registran.</small>
-          </article>
-        </div>
-
-        <article class="panel section-panel">
-          <div class="panel-head panel-head--wrap">
-            <div><div class="panel-label">CLIENTES</div><h3>DINERO A COBRAR</h3></div>
-            <button id="newReceivableBtn" class="btn btn-primary" type="button">+ NUEVO DEUDOR</button>
-          </div>
-          <div id="receivableList" class="finance-list"></div>
-        </article>
-      </section>
-
-      <!-- AUDIT -->
-      <section id="view-audit" class="page-view is-hidden">
-        <article class="panel section-panel">
-          <div class="panel-head"><div><div class="panel-label">SEGURIDAD INTERNA</div><h3>AUDITORÍA</h3></div></div>
-          <p class="muted">Registro de creación, edición y eliminación de movimientos, liquidaciones y deudores.</p>
-          <div id="auditList" class="audit-list"></div>
-        </article>
-      </section>
-    </main>
-
-    <nav class="mobile-nav">
-      <button class="mobile-nav-item is-active" data-view="dashboard"><span>⌂</span><small>INICIO</small></button>
-      <button class="mobile-nav-item" data-view="movements"><span>↕</span><small>CAJA</small></button>
-      <button id="mobileNewBtn" class="mobile-new">+</button>
-      <button class="mobile-nav-item" data-view="settlements"><span>◷</span><small>LIQUIDAR</small></button>
-      <button class="mobile-nav-item" data-view="receivables"><span>$</span><small>COBRAR</small></button>
-    </nav>
-  </div>
-
-  <!-- MOVEMENT MODAL -->
-  <div id="movementModal" class="modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="movementModalTitle">
-    <div class="modal-backdrop" data-close="movement"></div>
-    <div class="modal-card">
-      <div class="modal-head">
-        <div><div class="eyebrow">IMPORTB2B · CAJA</div><h3 id="movementModalTitle">NUEVO MOVIMIENTO</h3></div>
-        <button class="icon-btn" data-close="movement" type="button">×</button>
-      </div>
-
-      <form id="movementForm" class="movement-form">
-        <input id="movementId" type="hidden">
-        <div class="segmented" id="kindSegment">
-          <button type="button" class="segment is-active" data-kind="income">INGRESO</button>
-          <button type="button" class="segment" data-kind="expense">EGRESO</button>
-        </div>
-        <input id="movementKind" type="hidden" value="income">
-
-        <div class="form-grid">
-          <label><span>Importe</span><input id="movementAmount" type="number" step="0.01" min="0.01" required placeholder="0,00"></label>
-          <label><span>Moneda</span><select id="movementCurrency" required><option value="ARS">ARS</option><option value="USDT">USDT</option></select></label>
-          <label><span>Medio</span><select id="movementMethod" required><option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option><option value="usdt">USDT</option></select></label>
-          <label><span>Categoría</span><select id="movementCategory" required><option>VENTA</option><option>COMPRA DE MERCADERÍA</option><option>ENVÍO / LOGÍSTICA</option><option>GASTO GENERAL</option><option>CAPITAL INICIAL</option><option>AJUSTE DE CAJA / RECUENTO</option><option>APORTE SOCIO</option><option>RETIRO SOCIO</option><option>OTRO</option></select></label>
-        </div>
-
-        <label id="movementHolderWrap">
-          <span id="movementHolderLabel">¿De quién es la cuenta?</span>
-          <select id="movementHolder"><option value="nahuel">NAHUEL</option><option value="esteban">ESTEBAN</option></select>
-        </label>
-
-        <label><span>Descripción</span><input id="movementDescription" type="text" maxlength="180" placeholder="Ej: compra de 30 prendas"></label>
-
-        <label id="quoteTypeWrap" class="is-hidden">
-          <span>Cotización para USDT</span>
-          <select id="movementQuoteType">
-            <option value="auto">AUTOMÁTICA SEGÚN MOVIMIENTO</option>
-            <option value="buy">COMPRA P2P ACTUAL</option>
-            <option value="sell">VENTA P2P ACTUAL</option>
-            <option id="originalQuoteOption" value="original" class="is-hidden">MANTENER COTIZACIÓN ORIGINAL</option>
-          </select>
-        </label>
-
-        <div class="form-note">La fecha y hora se registran automáticamente al guardar. Si editás un movimiento, se conserva la fecha original y queda registrada la modificación.</div>
-
-        <div id="usdtPreview" class="usdt-preview is-hidden">
-          <div><span>Cotización aplicada</span><strong id="previewQuote">$ —</strong></div>
-          <div><span>Equivalente ARS</span><strong id="previewEquivalent">$ —</strong></div>
-          <small>La cotización queda asociada al movimiento.</small>
-        </div>
-
-        <div class="modal-actions">
-          <button class="btn btn-ghost" type="button" data-close="movement">CANCELAR</button>
-          <button id="movementSubmitBtn" class="btn btn-primary" type="submit">GUARDAR MOVIMIENTO</button>
-        </div>
-        <div id="movementMessage" class="form-message"></div>
-      </form>
-    </div>
-  </div>
-
-  <!-- SETTLEMENT CREATE/EDIT MODAL -->
-  <div id="settlementModal" class="modal is-hidden" role="dialog" aria-modal="true">
-    <div class="modal-backdrop" data-close="settlement"></div>
-    <div class="modal-card modal-card--small">
-      <div class="modal-head">
-        <div><div class="eyebrow">DINERO PENDIENTE</div><h3 id="settlementModalTitle">NUEVA LIQUIDACIÓN</h3></div>
-        <button class="icon-btn" data-close="settlement" type="button">×</button>
-      </div>
-      <form id="settlementForm" class="movement-form">
-        <input id="settlementId" type="hidden">
-        <label><span>Origen</span><select id="settlementProvider" required><option value="go_cuotas">GO CUOTAS</option><option value="tarjeta_credito">TARJETA DE CRÉDITO</option><option value="otro">OTRO</option></select></label>
-        <div class="form-grid">
-          <label><span>Importe bruto</span><input id="settlementGross" type="number" step="0.01" min="0.01" required></label>
-          <label><span>Comisiones / descuentos</span><input id="settlementFees" type="number" step="0.01" min="0" value="0" required></label>
-        </div>
-        <label><span>Fecha estimada de acreditación</span><input id="settlementExpected" type="date"></label>
-        <label><span>Descripción</span><input id="settlementDescription" type="text" maxlength="180" placeholder="Ej: venta con tarjeta / lote de operaciones"></label>
-        <div id="settlementNetPreview" class="calculation-strip"><span>NETO A RECIBIR</span><strong>$ 0</strong></div>
-        <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close="settlement">CANCELAR</button><button class="btn btn-primary" type="submit">GUARDAR</button></div>
-        <div id="settlementMessage" class="form-message"></div>
-      </form>
-    </div>
-  </div>
-
-  <!-- SETTLE FUNDS MODAL -->
-  <div id="settleFundsModal" class="modal is-hidden" role="dialog" aria-modal="true">
-    <div class="modal-backdrop" data-close="settleFunds"></div>
-    <div class="modal-card modal-card--small">
-      <div class="modal-head">
-        <div><div class="eyebrow">ACREDITACIÓN</div><h3>LIQUIDAR DINERO</h3></div>
-        <button class="icon-btn" data-close="settleFunds" type="button">×</button>
-      </div>
-      <form id="settleFundsForm" class="movement-form">
-        <input id="settleFundsId" type="hidden">
-        <div id="settleFundsSummary" class="calculation-strip"><span>NETO</span><strong>$ 0</strong></div>
-        <label><span>¿Dónde ingresó?</span><select id="settleDestinationMethod"><option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option></select></label>
-        <label><span id="settleHolderLabel">¿De quién es la cuenta?</span><select id="settleHolder"><option value="nahuel">NAHUEL</option><option value="esteban">ESTEBAN</option></select></label>
-        <div class="form-note">Al confirmar, deja de figurar como dinero a liquidar y entra automáticamente a la caja disponible.</div>
-        <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close="settleFunds">CANCELAR</button><button class="btn btn-primary" type="submit">CONFIRMAR ACREDITACIÓN</button></div>
-        <div id="settleFundsMessage" class="form-message"></div>
-      </form>
-    </div>
-  </div>
-
-  <!-- RECEIVABLE CREATE/EDIT MODAL -->
-  <div id="receivableModal" class="modal is-hidden" role="dialog" aria-modal="true">
-    <div class="modal-backdrop" data-close="receivable"></div>
-    <div class="modal-card modal-card--small">
-      <div class="modal-head">
-        <div><div class="eyebrow">CUENTA POR COBRAR</div><h3 id="receivableModalTitle">NUEVO DEUDOR</h3></div>
-        <button class="icon-btn" data-close="receivable" type="button">×</button>
-      </div>
-      <form id="receivableForm" class="movement-form">
-        <input id="receivableId" type="hidden">
-        <label><span>Cliente</span><input id="receivableClient" type="text" maxlength="120" required placeholder="Nombre del cliente"></label>
-        <label><span>Teléfono (opcional)</span><input id="receivablePhone" type="text" maxlength="40" placeholder="Ej: 342..."></label>
-        <div class="form-grid">
-          <label><span>Importe total</span><input id="receivableTotal" type="number" step="0.01" min="0.01" required></label>
-          <label><span>Vencimiento (opcional)</span><input id="receivableDue" type="date"></label>
-        </div>
-        <label><span>Descripción</span><input id="receivableDescription" type="text" maxlength="180" placeholder="Ej: pedido entregado / saldo pendiente"></label>
-        <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close="receivable">CANCELAR</button><button class="btn btn-primary" type="submit">GUARDAR</button></div>
-        <div id="receivableMessage" class="form-message"></div>
-      </form>
-    </div>
-  </div>
-
-  <!-- RECEIVABLE PAYMENT MODAL -->
-  <div id="receivablePaymentModal" class="modal is-hidden" role="dialog" aria-modal="true">
-    <div class="modal-backdrop" data-close="receivablePayment"></div>
-    <div class="modal-card modal-card--small">
-      <div class="modal-head">
-        <div><div class="eyebrow">COBRO</div><h3>REGISTRAR PAGO</h3></div>
-        <button class="icon-btn" data-close="receivablePayment" type="button">×</button>
-      </div>
-      <form id="receivablePaymentForm" class="movement-form">
-        <input id="receivablePaymentId" type="hidden">
-        <div id="receivablePaymentSummary" class="calculation-strip"><span>SALDO PENDIENTE</span><strong>$ 0</strong></div>
-        <label><span>Importe cobrado</span><input id="receivablePaymentAmount" type="number" step="0.01" min="0.01" required></label>
-        <label><span>Medio de cobro</span><select id="receivablePaymentMethod"><option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option></select></label>
-        <label><span id="receivablePaymentHolderLabel">¿De quién es la cuenta?</span><select id="receivablePaymentHolder"><option value="nahuel">NAHUEL</option><option value="esteban">ESTEBAN</option></select></label>
-        <div class="form-note">El pago se registra automáticamente como ingreso en caja y reduce el saldo del cliente.</div>
-        <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close="receivablePayment">CANCELAR</button><button class="btn btn-primary" type="submit">REGISTRAR COBRO</button></div>
-        <div id="receivablePaymentMessage" class="form-message"></div>
-      </form>
-    </div>
-  </div>
-
-  <!-- INTERNAL TRANSFER MODAL -->
-  <div id="internalTransferModal" class="modal is-hidden" role="dialog" aria-modal="true">
-    <div class="modal-backdrop" data-close="internalTransfer"></div>
-    <div class="modal-card modal-card--small">
-      <div class="modal-head">
-        <div><div class="eyebrow">MOVIMIENTO INTERNO</div><h3>TRANSFERENCIA INTERNA</h3></div>
-        <button class="icon-btn" data-close="internalTransfer" type="button">×</button>
-      </div>
-      <form id="internalTransferForm" class="movement-form">
-        <div class="form-grid">
-          <label><span>Moneda</span><select id="internalCurrency"><option value="ARS">ARS</option><option value="USDT">USDT</option></select></label>
-          <label><span>Importe</span><input id="internalAmount" type="number" step="0.01" min="0.01" required placeholder="0,00"></label>
-        </div>
-
-        <div class="internal-transfer-box">
-          <div class="panel-label">ORIGEN</div>
-          <div class="form-grid">
-            <label><span>Medio</span><select id="internalFromMethod"><option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option></select></label>
-            <label><span>Titular</span><select id="internalFromHolder"><option value="nahuel">NAHUEL</option><option value="esteban">ESTEBAN</option></select></label>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Categoría</th><th>Producto</th><th>Detalle</th><th>Cant.</th><th>USD original</th><th>USD real</th><th>Dólar</th><th>ARS</th><th>Stock</th><th>Acción</th></tr></thead>
+              <tbody>${p.productos.map(i=>`
+                <tr>
+                  <td><select id="cat_${i.dbId}">${categorias.map(c=>`<option ${i.categoria===c?"selected":""}>${esc(c)}</option>`).join("")}</select></td>
+                  <td><input id="prod_${i.dbId}" value="${esc(i.producto)}"></td>
+                  <td><input id="det_${i.dbId}" value="${esc(i.detalle)}"></td>
+                  <td><input id="qty_${i.dbId}" type="number" value="${i.cantidad}"></td>
+                  <td><input id="orig_${i.dbId}" type="number" step="0.01" value="${i.originalUsd??""}"></td>
+                  <td><input id="usd_${i.dbId}" type="number" step="0.01" value="${i.costoUsd}"></td>
+                  <td><input id="rate_${i.dbId}" type="number" value="${i.dolar}"></td>
+                  <td><input id="ars_${i.dbId}" type="number" value="${Math.round(i.costoArs)}"></td>
+                  <td><select id="stock_${i.dbId}"><option value="1" ${!i.excludedFromStock?"selected":""}>Incluido</option><option value="0" ${i.excludedFromStock?"selected":""}>Excluido</option></select></td>
+                  <td>
+                    <button class="btn green small" onclick="guardarItem(${i.dbId},${p.dbId})">Guardar</button>
+                    <button class="btn danger small" onclick="eliminarItem(${i.dbId},${p.dbId})">Eliminar</button>
+                  </td>
+                </tr>`).join("")}</tbody>
+            </table>
           </div>
         </div>
+      </div>`;
+  });
+  if(!div.innerHTML)div.innerHTML='<div class="empty">No se encontraron pedidos.</div>';
+}
 
-        <div class="internal-transfer-arrow">↓</div>
+function prepararSeguimientoPedido(orderDbId){
+  document.getElementById("shipmentOrder").value=String(orderDbId);
+  document.getElementById("nuevoSeguimientoBox").classList.add("active");
+  document.getElementById("nuevoSeguimientoBox").scrollIntoView({behavior:"smooth",block:"start"});
+}
 
-        <div class="internal-transfer-box">
-          <div class="panel-label">DESTINO</div>
-          <div class="form-grid">
-            <label><span>Medio</span><select id="internalToMethod"><option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option></select></label>
-            <label><span>Titular</span><select id="internalToHolder"><option value="esteban">ESTEBAN</option><option value="nahuel">NAHUEL</option></select></label>
-          </div>
-        </div>
+function togglePedido(id){
+  document.querySelectorAll(".order").forEach(o=>{if(Number(o.dataset.id)!==Number(id))o.classList.remove("active")});
+  document.querySelector(`.order[data-id="${id}"]`)?.classList.toggle("active");
+}
 
-        <label><span>Descripción (opcional)</span><input id="internalDescription" type="text" maxlength="180" placeholder="Ej: paso efectivo a cuenta / envío entre socios"></label>
-        <div id="internalQuoteNote" class="form-note is-hidden">Para USDT se utiliza la cotización de venta actual solo como referencia contable. El movimiento interno no modifica el resultado del mes.</div>
-        <div class="form-note">Esta operación mueve dinero dentro de IMPORTB2B. No se contabiliza como ingreso ni egreso real del negocio.</div>
+async function guardarItem(itemId,orderDbId){
+  const original=document.getElementById("orig_"+itemId).value;
+  const costUsd=Number(document.getElementById("usd_"+itemId).value||0);
+  const rate=Number(document.getElementById("rate_"+itemId).value||0);
+  const manualArs=Number(document.getElementById("ars_"+itemId).value||0);
 
-        <div class="modal-actions">
-          <button class="btn btn-ghost" type="button" data-close="internalTransfer">CANCELAR</button>
-          <button class="btn btn-primary" type="submit">REGISTRAR TRANSFERENCIA</button>
-        </div>
-        <div id="internalTransferMessage" class="form-message"></div>
-      </form>
-    </div>
-  </div>
+  const payload={
+    category:document.getElementById("cat_"+itemId).value,
+    product:document.getElementById("prod_"+itemId).value.trim(),
+    detail:document.getElementById("det_"+itemId).value.trim(),
+    quantity:Number(document.getElementById("qty_"+itemId).value||0),
+    original_usd:original===""?null:Number(original),
+    cost_usd:costUsd,
+    dollar_rate:rate,
+    cost_ars:manualArs||costUsd*rate,
+    excluded_from_stock:document.getElementById("stock_"+itemId).value==="0",
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await sb.from("importb2b_order_items").update(payload).eq("id",itemId);
+  if(error){alert(error.message);return}
+  await recalcularInversionPedido(orderDbId);
+  await cargarPedidos();renderAll();
+}
 
-  <script src="./assets/js/config.js"></script>
-  <script type="module" src="./assets/js/app.js"></script>
+async function recalcularInversionPedido(orderDbId){
+  const {data,error}=await sb.from("importb2b_order_items").select("cost_usd,quantity").eq("order_id",orderDbId);
+  if(error)return;
+  const total=(data||[]).reduce((a,i)=>a+Number(i.cost_usd||0)*Number(i.quantity||0),0);
+  await sb.from("importb2b_orders").update({investment_usd:total,updated_at:new Date().toISOString()}).eq("id",orderDbId);
+}
+
+async function eliminarItem(itemId,orderDbId){
+  if(!confirm("¿Eliminar este producto del pedido?"))return;
+  const {error}=await sb.from("importb2b_order_items").delete().eq("id",itemId);
+  if(error){alert(error.message);return}
+  await recalcularInversionPedido(orderDbId);
+  await cargarPedidos();renderAll();
+}
+
+async function eliminarPedido(orderDbId){
+  if(!confirm("¿Eliminar este pedido completo? Esta acción también elimina sus productos."))return;
+  const {error:ierr}=await sb.from("importb2b_order_items").delete().eq("order_id",orderDbId);
+  if(ierr){alert(ierr.message);return}
+  const {error}=await sb.from("importb2b_orders").delete().eq("id",orderDbId);
+  if(error){alert(error.message);return}
+  await cargarPedidos();renderAll();
+}
+
+function renderCats(tab){
+  const ids={minorista:"catsMinorista",mayorista6:"catsMayorista6",mayorista12:"catsMayorista12",mayorista36:"catsMayorista36"};
+  document.getElementById(ids[tab]).innerHTML=categorias.map(c=>`
+    <button class="cat-btn ${categoriaActiva[tab]===c?"active-btn":""}" onclick="categoriaActiva['${tab}']='${c.replace(/'/g,"\\'")}';renderPrecios('${tab}')">${esc(c)}</button>`).join("");
+}
+
+function renderPrecios(tab){
+  renderCats(tab);
+  const inputs={minorista:"buscarMinorista",mayorista6:"buscarMayorista6",mayorista12:"buscarMayorista12",mayorista36:"buscarMayorista36"};
+  const outputs={minorista:"tablaMinorista",mayorista6:"tablaMayorista6",mayorista12:"tablaMayorista12",mayorista36:"tablaMayorista36"};
+  const q=document.getElementById(inputs[tab]).value.toLowerCase().trim();
+  const data=stockAgrupado().filter(i=>i.categoria===categoriaActiva[tab]&&(`${i.producto} ${i.detalle} ${i.categoria}`.toLowerCase().includes(q)));
+
+  document.getElementById(outputs[tab]).innerHTML=`
+    <div class="table-wrap"><table>
+      <thead><tr><th>Producto</th><th>Detalle</th><th>Stock</th><th>Costo prom. USD</th><th>Costo prom. ARS</th><th>Venta sugerida</th><th>Venta redonda</th><th>Ganancia/u.</th></tr></thead>
+      <tbody>${data.map(i=>{
+        const m=margenes[i.categoria]?.[tab]||0;
+        const venta=i.costoPromedioArs*(1+m/100);
+        const red=redondear500(venta);
+        return `<tr><td>${esc(i.producto)}</td><td>${esc(i.detalle)}</td><td>${i.cantidad}</td><td>${usd(i.costoPromedioUsd)}</td><td>${money(i.costoPromedioArs)}</td><td>${money(venta)}</td><td><strong>${money(red)}</strong></td><td>${money(red-i.costoPromedioArs)}</td></tr>`;
+      }).join("")}</tbody>
+    </table></div>${data.length?"":'<div class="empty">No hay productos en esta categoría.</div>'}`;
+}
+
+function openTab(id,btn){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active-btn"));
+  document.getElementById(id).classList.add("active");
+  btn.classList.add("active-btn");
+}
+function openMainTab(id){
+  const btn=document.querySelector(`.tab-btn[data-tab="${id}"]`);
+  if(btn){openTab(id,btn);document.getElementById("mainTabs").scrollIntoView({behavior:"smooth",block:"start"})}
+}
+
+function exportarCSV(){
+  const rows=[["categoria","producto","detalle","stock","costoPromedioUsd","costoPromedioArs"]];
+  stockAgrupado().forEach(i=>rows.push([i.categoria,i.producto,i.detalle,i.cantidad,i.costoPromedioUsd,i.costoPromedioArs]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const u=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=u;a.download="stock_importb2b.csv";a.click();URL.revokeObjectURL(u);
+}
+
+function activarRealtime(){
+  if(realtimeChannel)sb.removeChannel(realtimeChannel);
+  realtimeChannel=sb.channel("importb2b-sync")
+    .on("postgres_changes",{event:"*",schema:"public",table:"importb2b_orders",filter:`owner_id=eq.${currentUser.id}`},()=>cargarTodo())
+    .on("postgres_changes",{event:"*",schema:"public",table:"importb2b_order_items",filter:`owner_id=eq.${currentUser.id}`},()=>cargarTodo())
+    .on("postgres_changes",{event:"*",schema:"public",table:"importb2b_margins",filter:`owner_id=eq.${currentUser.id}`},()=>cargarTodo())
+    .on("postgres_changes",{event:"*",schema:"public",table:"importb2b_expenses",filter:`owner_id=eq.${currentUser.id}`},()=>cargarTodo())
+    .on("postgres_changes",{event:"*",schema:"public",table:"importb2b_shipments",filter:`owner_id=eq.${currentUser.id}`},()=>cargarTodo())
+    .on("postgres_changes",{event:"*",schema:"public",table:"importb2b_tracking_events",filter:`owner_id=eq.${currentUser.id}`},()=>cargarTodo())
+    .subscribe();
+}
+
+function renderAll(){
+  renderMargenes();
+  renderTemporal();
+  renderResumen();
+  renderPedidos();
+  renderPrecios("minorista");
+  renderPrecios("mayorista6");
+  renderPrecios("mayorista12");
+  renderPrecios("mayorista36");
+  renderGastos();
+  renderShipments();
+  renderShipmentOrderOptions();
+}
+
+(async()=>{
+  await registrarServiceWorker();
+  if(!window.supabase){document.getElementById("loginStatus").textContent="No cargó Supabase. Revisá tu conexión.";return}
+  const {data}=await sb.auth.getSession();
+  currentUser=data.session?.user||null;
+  if(currentUser)await startApp();
+})();
+</script>
 </body>
 </html>
