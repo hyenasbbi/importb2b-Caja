@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="/assets/brand/favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/brand/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="stylesheet" href="./assets/css/styles.css?v=053">
+  <link rel="stylesheet" href="./assets/css/styles.css?v=054">
 </head>
 <body>
   <div class="watermark-grid" aria-hidden="true"></div>
@@ -135,13 +135,12 @@
                 <strong id="usdtBalance">0,00 USDT</strong>
               </button>
             </div>
-
-            <div class="cash-action-row">
-              <div class="cash-action-copy">
-                <span>CONVERSIÓN INTERNA</span>
-                <small>Usá transferencia o efectivo disponible para comprar USDT sin registrarlo como gasto operativo.</small>
+            <div class="funds-toolbar">
+              <div class="funds-toolbar-copy">
+                <span>GESTIÓN DE FONDOS</span>
+                <small>Mové dinero entre socios o convertí ARS a USDT sin alterar el resultado operativo.</small>
               </div>
-              <button id="openArsToUsdtBtn" class="btn btn-outline btn-convert-usdt" type="button">⇄ CONVERTIR ARS → USDT</button>
+              <button id="openFundManagerBtn" class="funds-toolbar-btn" type="button">↔ MOVER / CONVERTIR FONDOS</button>
             </div>
 
             <div id="transferBreakdown" class="cash-breakdown is-hidden">
@@ -262,7 +261,7 @@
           <div class="panel-head panel-head--wrap">
             <div><div class="panel-label">CAJA</div><h3>MOVIMIENTOS</h3></div>
             <div class="header-actions">
-              <button id="newInternalTransferBtn" class="btn btn-ghost" type="button">↔ MOVER FONDOS</button>
+              <button id="newInternalTransferBtn" class="btn btn-ghost" type="button">↔ MOVER / CONVERTIR FONDOS</button>
               <button class="btn btn-ghost" data-go="audit" type="button">AUDITORÍA</button>
               <button id="newMovementViewBtn" class="btn btn-primary" type="button">+ NUEVO</button>
             </div>
@@ -566,115 +565,191 @@
     </div>
   </div>
 
-  <!-- INTERNAL TRANSFER MODAL -->
+  <!-- FUNDS MANAGER MODAL -->
   <div id="internalTransferModal" class="modal is-hidden" role="dialog" aria-modal="true">
     <div class="modal-backdrop" data-close="internalTransfer"></div>
-    <div class="modal-card modal-card--small">
+    <div class="modal-card funds-manager-modal">
       <div class="modal-head">
-        <div><div class="eyebrow">MOVIMIENTO INTERNO</div><h3>TRANSFERENCIA INTERNA</h3></div>
+        <div>
+          <div class="eyebrow">IMPORTB2B · CAJA</div>
+          <h3>GESTIÓN DE FONDOS</h3>
+        </div>
         <button class="icon-btn" data-close="internalTransfer" type="button">×</button>
       </div>
+
       <form id="internalTransferForm" class="movement-form">
-        <div class="form-grid">
-          <label><span>Moneda</span><select id="internalCurrency"><option value="ARS">ARS</option><option value="USDT">USDT</option></select></label>
-          <label><span>Importe</span><input id="internalAmount" type="number" step="0.01" min="0.01" required placeholder="0,00"></label>
+        <input id="internalOperationMode" type="hidden" value="move">
+
+        <div class="fund-mode-tabs" id="internalModeSegment">
+          <button type="button" class="fund-mode-tab is-active" data-mode="move">
+            <span>↔</span>
+            <div><strong>MOVER FONDOS</strong><small>Misma moneda</small></div>
+          </button>
+          <button type="button" class="fund-mode-tab" data-mode="convert">
+            <span>⇄</span>
+            <div><strong>ARS → USDT</strong><small>Comprar USDT</small></div>
+          </button>
         </div>
 
-        <div class="internal-transfer-box">
-          <div class="panel-label">ORIGEN</div>
+        <!-- SAME-CURRENCY INTERNAL MOVE -->
+        <div id="internalMoveSection" class="fund-operation-section">
+          <div class="fund-section-heading">
+            <span>TRANSFERENCIA INTERNA</span>
+            <small>Mueve saldo dentro de IMPORTB2B sin generar un ingreso o egreso operativo.</small>
+          </div>
+
           <div class="form-grid">
-            <label><span>Medio</span><select id="internalFromMethod"><option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option></select></label>
-            <label><span>Titular</span><select id="internalFromHolder"><option value="nahuel">NAHUEL</option><option value="esteban">ESTEBAN</option></select></label>
+            <label>
+              <span>Moneda</span>
+              <select id="internalCurrency">
+                <option value="ARS">ARS</option>
+                <option value="USDT">USDT</option>
+              </select>
+            </label>
+            <label>
+              <span>Importe</span>
+              <input id="internalAmount" type="number" step="0.01" min="0.01" placeholder="0,00">
+            </label>
+          </div>
+
+          <div class="fund-flow-grid">
+            <div class="fund-flow-card">
+              <div class="fund-flow-label">01 · ORIGEN</div>
+              <label>
+                <span>Medio</span>
+                <select id="internalFromMethod">
+                  <option value="transferencia">TRANSFERENCIA</option>
+                  <option value="efectivo">EFECTIVO</option>
+                </select>
+              </label>
+              <label>
+                <span>Titular</span>
+                <select id="internalFromHolder">
+                  <option value="nahuel">NAHUEL</option>
+                  <option value="esteban">ESTEBAN</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="fund-flow-arrow">→</div>
+
+            <div class="fund-flow-card">
+              <div class="fund-flow-label">02 · DESTINO</div>
+              <label>
+                <span>Medio</span>
+                <select id="internalToMethod">
+                  <option value="transferencia">TRANSFERENCIA</option>
+                  <option value="efectivo">EFECTIVO</option>
+                </select>
+              </label>
+              <label>
+                <span>Titular</span>
+                <select id="internalToHolder">
+                  <option value="esteban">ESTEBAN</option>
+                  <option value="nahuel">NAHUEL</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <label>
+            <span>Descripción (opcional)</span>
+            <input id="internalDescription" type="text" maxlength="180" placeholder="Ej: paso efectivo a cuenta / envío entre socios">
+          </label>
+
+          <div id="internalQuoteNote" class="form-note is-hidden">
+            Para movimientos USDT se usa la cotización de venta actual únicamente como referencia contable.
           </div>
         </div>
 
-        <div class="internal-transfer-arrow">↓</div>
+        <!-- ARS TO USDT CONVERSION -->
+        <div id="internalConvertSection" class="fund-operation-section is-hidden">
+          <div class="fund-section-heading">
+            <span>CONVERSIÓN INTERNA · ARS → USDT</span>
+            <small>Registra exactamente cuándo los pesos salen de caja y pasan a formar parte del saldo USDT.</small>
+          </div>
 
-        <div class="internal-transfer-box">
-          <div class="panel-label">DESTINO</div>
-          <div class="form-grid">
-            <label><span>Medio</span><select id="internalToMethod"><option value="transferencia">TRANSFERENCIA</option><option value="efectivo">EFECTIVO</option></select></label>
-            <label><span>Titular</span><select id="internalToHolder"><option value="esteban">ESTEBAN</option><option value="nahuel">NAHUEL</option></select></label>
+          <div class="fund-conversion-flow">
+            <div class="fund-flow-card fund-flow-card--ars">
+              <div class="fund-flow-label">01 · SALEN ARS</div>
+              <div class="form-grid">
+                <label>
+                  <span>Origen</span>
+                  <select id="conversionFromMethod">
+                    <option value="transferencia">TRANSFERENCIA</option>
+                    <option value="efectivo">EFECTIVO</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Titular ARS</span>
+                  <select id="conversionFromHolder">
+                    <option value="nahuel">NAHUEL</option>
+                    <option value="esteban">ESTEBAN</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                <span>Importe en ARS</span>
+                <input id="conversionArsAmount" type="number" min="0.01" step="0.01" placeholder="0,00">
+              </label>
+            </div>
+
+            <div class="fund-conversion-center">
+              <span>⇄</span>
+              <small>BINANCE P2P</small>
+            </div>
+
+            <div class="fund-flow-card fund-flow-card--usdt">
+              <div class="fund-flow-label">02 · ENTRAN USDT</div>
+              <label>
+                <span>Titular USDT</span>
+                <select id="conversionToHolder">
+                  <option value="nahuel">NAHUEL</option>
+                  <option value="esteban">ESTEBAN</option>
+                </select>
+              </label>
+
+              <div class="conversion-result">
+                <div>
+                  <span>COTIZACIÓN COMPRA</span>
+                  <strong id="conversionBuyQuote">$ —</strong>
+                </div>
+                <div>
+                  <span>USDT A RECIBIR</span>
+                  <strong id="conversionUsdtPreview">0,00 USDT</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <label>
+            <span>Descripción (opcional)</span>
+            <input id="conversionDescription" type="text" maxlength="180" placeholder="Ej: cambio de recaudación del día a USDT">
+          </label>
+
+          <div class="form-note">
+            La operación genera dos registros vinculados: salida de ARS + entrada de USDT. No modifica el resultado operativo del mes.
           </div>
         </div>
 
-        <label><span>Descripción (opcional)</span><input id="internalDescription" type="text" maxlength="180" placeholder="Ej: paso efectivo a cuenta / envío entre socios"></label>
-        <div id="internalQuoteNote" class="form-note is-hidden">Para USDT se utiliza la cotización de venta actual solo como referencia contable. El movimiento interno no modifica el resultado del mes.</div>
-        <div class="form-note">Esta operación mueve dinero dentro de IMPORTB2B. No se contabiliza como ingreso ni egreso real del negocio.</div>
-
-        <div class="modal-actions">
-          <button class="btn btn-ghost" type="button" data-close="internalTransfer">CANCELAR</button>
-          <button class="btn btn-primary" type="submit">REGISTRAR TRANSFERENCIA</button>
+        <div class="fund-manager-footer">
+          <div class="fund-manager-status">
+            <span id="internalOperationHint">MOVIMIENTO INTERNO · MISMA MONEDA</span>
+            <small>Todos los cambios quedan registrados en Movimientos y Auditoría.</small>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-ghost" type="button" data-close="internalTransfer">CANCELAR</button>
+            <button id="internalTransferSubmitBtn" class="btn btn-primary" type="submit">REGISTRAR MOVIMIENTO</button>
+          </div>
         </div>
+
         <div id="internalTransferMessage" class="form-message"></div>
       </form>
     </div>
   </div>
 
 
-  <!-- ARS TO USDT CONVERSION MODAL -->
-  <div id="arsToUsdtModal" class="modal is-hidden" role="dialog" aria-modal="true">
-    <div class="modal-backdrop" data-close="arsToUsdt"></div>
-    <div class="modal-card modal-card--small">
-      <div class="modal-head">
-        <div><div class="eyebrow">CAMBIO INTERNO</div><h3>ARS → USDT</h3></div>
-        <button class="icon-btn" data-close="arsToUsdt" type="button">×</button>
-      </div>
-
-      <form id="arsToUsdtForm" class="movement-form">
-        <div class="form-note">Esta operación resta ARS de tu caja y suma USDT. No cuenta como gasto ni ingreso operativo.</div>
-
-        <div class="internal-transfer-box">
-          <div class="panel-label">SALEN ARS</div>
-          <div class="form-grid">
-            <label>
-              <span>Origen</span>
-              <select id="conversionFromMethod" required>
-                <option value="transferencia">TRANSFERENCIA</option>
-                <option value="efectivo">EFECTIVO</option>
-              </select>
-            </label>
-            <label>
-              <span>Titular ARS</span>
-              <select id="conversionFromHolder" required>
-                <option value="nahuel">NAHUEL</option>
-                <option value="esteban">ESTEBAN</option>
-              </select>
-            </label>
-          </div>
-          <label><span>Importe en ARS</span><input id="conversionArsAmount" type="number" min="0.01" step="0.01" required placeholder="0,00"></label>
-        </div>
-
-        <div class="internal-transfer-arrow">↓</div>
-
-        <div class="internal-transfer-box">
-          <div class="panel-label">ENTRAN USDT</div>
-          <label>
-            <span>Titular USDT</span>
-            <select id="conversionToHolder" required>
-              <option value="nahuel">NAHUEL</option>
-              <option value="esteban">ESTEBAN</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="conversion-preview">
-          <div><span>COTIZACIÓN COMPRA</span><strong id="conversionBuyQuote">$ —</strong></div>
-          <div><span>USDT ESTIMADOS</span><strong id="conversionUsdtPreview">0,00 USDT</strong></div>
-        </div>
-
-        <label><span>Descripción (opcional)</span><input id="conversionDescription" type="text" maxlength="180" placeholder="Ej: compra USDT con efectivo"></label>
-
-        <div class="modal-actions">
-          <button class="btn btn-ghost" type="button" data-close="arsToUsdt">CANCELAR</button>
-          <button class="btn btn-primary" type="submit">REGISTRAR CAMBIO</button>
-        </div>
-        <div id="arsToUsdtMessage" class="form-message"></div>
-      </form>
-    </div>
-  </div>
-
   <script src="./assets/js/config.js"></script>
-  <script type="module" src="/app.js?v=053"></script>
+  <script type="module" src="/app.js?v=054"></script>
 </body>
 </html>
